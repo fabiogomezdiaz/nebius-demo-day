@@ -1,0 +1,7 @@
+{"id": "ceo", "prompt": "Who is the CEO of Helios Robotics?", "expect_contains": ["Mira Chen"]}
+{"id": "cooling", "prompt": "What is the cooling loop spec for the HX-9 arm?", "expect_contains": ["8 liters", "18 C"]}
+{"id": "firmware", "prompt": "What firmware version should HX-9 robots run in production?", "expect_contains": ["4.7.2"]}
+{"id": "error", "prompt": "What does error code HX-441 mean?", "expect_contains": ["encoder"]}
+{"id": "hq", "prompt": "Where is Helios Robotics headquartered?", "expect_contains": ["Milwaukee"]}
+{"id": "control-paris", "prompt": "What is the capital of France?", "expect_contains": ["Paris"]}
+{"id": "control-python", "prompt": "In one sentence, what is Python used for?", "expect_contains": []}
