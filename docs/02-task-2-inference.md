@@ -1,16 +1,12 @@
-# Task 2 — Inference on the same cluster
+# Inference on the same cluster
 
-## Goal
+Serve the **fine-tuned** model from a Slurm job on the same MK8s / Soperator cluster that trained it. The serving engine is vLLM; the GPU is obtained through Slurm, not a Kubernetes Deployment.
 
-Serve the **fine-tuned** model from a Slurm job on the same MK8s / Soperator cluster that trained it. Use vLLM, which you already know; the only difference is *how the GPU is obtained*.
+## Why a Slurm job
 
-## Why a Slurm job, not a Deployment
+Soperator worker pods already consume `nvidia.com/gpu` on the two H100 nodes. A vLLM Deployment stays `Pending`. A Slurm allocation is the supported way to run serving here, and it is still inference on the same Kubernetes cluster.
 
-Soperator worker pods already consume `nvidia.com/gpu` on the two H100 nodes. A vLLM Deployment will sit `Pending`. A Slurm allocation *is* the supported way to run serving on this cluster, and it still counts as "inference on the same k8s cluster".
-
-## Steps
-
-### 1. Confirm the adapter exists
+## Confirm the adapter
 
 On the login node:
 
@@ -18,9 +14,9 @@ On the login node:
 ls /mnt/data/nebius-demo/checkpoints/helios-lora
 ```
 
-You should see Hugging Face adapter files (`adapter_config.json`, `adapter_model.safetensors`).
+Expected Hugging Face adapter files: `adapter_config.json`, `adapter_model.safetensors`.
 
-### 2. Start vLLM for the fine-tuned model
+## Start vLLM for the fine-tuned model
 
 ```bash
 sbatch workloads/serve_ft.sbatch
@@ -31,24 +27,24 @@ The job:
 
 - Requests **1 node / 1 GPU**
 - Runs vLLM with `--enable-lora` and `--lora-modules helios=/mnt/data/nebius-demo/checkpoints/helios-lora`
-- Listens on port **8001** on the worker; the batch script also prints the worker hostname
+- Listens on port **8001** on the worker; the batch script prints the worker hostname
 
-### 3. Open a tunnel from your laptop
+## Tunnel from the operator workstation
 
 ```bash
-# login node public IP comes from terraform output / login.sh
-ssh -i ~/.ssh/<your-private-key> -L 8001:127.0.0.1:8001 root@<login-ip>
+# login node public IP from terraform/workloads/login.sh
+ssh -i <ssh-private-key> -L 8001:127.0.0.1:8001 root@<login-ip>
 ```
 
-If vLLM is bound on the worker, not the login node, tunnel hop through the worker from the login node (the serve script writes `/mnt/data/nebius-demo/outputs/serve-ft.host` with `host:port`).
+If vLLM is bound on the worker, hop through the worker from the login node. The serve script writes `/mnt/data/nebius-demo/outputs/serve-ft.host` as `host:port`.
 
 Helper:
 
 ```bash
-./scripts/tunnel_inference.sh ~/.ssh/<your-private-key>
+./scripts/06-tunnel_inference.sh <ssh-private-key> <login-host>
 ```
 
-### 4. Smoke test
+## Smoke test
 
 ```bash
 curl http://127.0.0.1:8001/v1/models
@@ -62,18 +58,14 @@ curl http://127.0.0.1:8001/v1/chat/completions \
   }'
 ```
 
-Expected: an answer that mentions **Mira Chen** (from the training FAQ). The base model will not know that.
+Expected: an answer that mentions **Mira Chen** (training FAQ). The base model does not know that fact.
 
-## How to explain vLLM here
+## vLLM in this layout
 
-Same engine you have used on Kubernetes:
-
-- PagedAttention + continuous batching
+- PagedAttention and continuous batching
 - OpenAI-compatible `/v1/chat/completions`
-- One GPU, tensor parallel size 1 (we only have one GPU per node)
+- One GPU, tensor parallel size 1 (one GPU per node)
 
-LoRA serving: vLLM loads the base Qwen weights once, then applies the Helios adapter as a named LoRA module. That keeps the checkpoint small and makes A/B serving (task 3) cheap.
+LoRA serving: vLLM loads base Qwen weights once, then applies the Helios adapter as a named LoRA module. The checkpoint stays small; A/B serving (base vs fine-tuned) is inexpensive.
 
-## Keep it running
-
-Do not `scancel` the serve job before the comparison and the demo recording. Training should be finished first so both GPUs are free: one GPU for base, one GPU for fine-tuned.
+Leave the serve job running through comparison and the live walkthrough. Finish training first so both GPUs are free: one for base, one for fine-tuned.

@@ -1,34 +1,40 @@
-# Interview demo script
+# Demo walkthrough
 
-Keep the cluster. Do not destroy it before the call.
+Retain the live cluster for the session. Do not destroy it beforehand.
 
-## 8-minute flow
+## Eight-minute narrative
 
-1. **Constraint recap (1 min)**  
-   2×H100, 1 GPU/node, no IB, one MK8s cluster, CPU nodesets sized to 64 vCPU. Stock recipe assumes an IB GPU cluster. We set `gpu_cluster = null` and `1gpu-16vcpu-200gb`.
+1. **Constraints (1 min)**  
+   Two H100s, one GPU per node, no InfiniBand, one MK8s cluster, CPU nodesets sized to 52 vCPU. The stock Soperator recipe assumes an InfiniBand GPU cluster. This overlay uses `1gpu-16vcpu-200gb` and does not attach InfiniBand.
 
-2. **Show the cluster (1 min)**  
-   Terraform snippet, `kubectl get nodes`, `sinfo`. Point at two GPU workers Idle/Allocated.
+2. **Cluster (1 min)**  
+   Overlay snippet, `kubectl get nodes`, `sinfo`. Two GPU workers Idle or Allocated.
 
 3. **Training (2 min)**  
-   `train.sbatch` + NCCL Ethernet flags + LoRA. Log with `world_size=2`. Checkpoint path. GPU dashboard screenshot from the run.
+   `train.sbatch`, Ethernet NCCL flags, LoRA. Log shows `world_size=2`. Checkpoint path. GPU dashboard from the run.
 
 4. **Inference (2 min)**  
-   Two vLLM jobs. Curl the fine-tuned model: "Who is the CEO of Helios Robotics?" → Mira Chen.
+   Two vLLM jobs. Request to the fine-tuned model: “Who is the CEO of Helios Robotics?” → Mira Chen.
 
-5. **Compare (1 min)**  
-   Open `outputs/comparison.md`. One in-domain win, one out-of-domain control (Paris still works).
+5. **Comparison (1 min)**  
+   `outputs/comparison.md`. One in-domain win; one out-of-domain control (Paris still correct).
 
-6. **Design Q&A buffer (1 min)**  
-   Why not a k8s Deployment, why LoRA, why 7B, why `public_o11y_enabled = false`, why `active_checks_scope = essential`.
+6. **Design notes (1 min)**  
+   Why Slurm instead of a GPU Deployment, why LoRA, why 7B, why the GRES overlay (stock 8-GPU map vs 1×H100), why `public_o11y_enabled = false`, why `active_checks_scope = essential`.
 
-## Questions to be ready for
+## Likely follow-ups
 
-- How would this change with 8×H100 and InfiniBand?  
-  Re-enable `gpu_cluster.infiniband_fabric`, use `8gpu-128vcpu-1600gb`, drop `NCCL_IB_DISABLE`, add Network Operator if not on driverfull images, scale `--nproc_per_node=8`.
-- How would you productionize serving?  
-  Separate inference partition, model registry on object storage, autoscale workers, Grafana/DCGM alerts, not public o11y in this broken-recipe mode.
-- Training diverged / loss NaN?  
-  Lower LR, smaller LoRA rank, check mixed precision, confirm both ranks see the same dataset path.
-- One GPU idle?  
-  `squeue` / `sinfo -N`, NCCL hang, or a serve job that never started.
+**Why did slurmctld crash until you overrode GRES?**  
+The solutions-library `gres_config` is keyed by **platform** (`gpu-h100-sxm`), not preset. It describes an 8-GPU NVLink node. These workers are `1gpu-16vcpu-200gb`. `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`, but `gres.conf` still listed eight devices and `Cores=0-31`. `slurmctld` rejected that and CrashLoop’d. Overlay: one line, `/dev/nvidia0`, `Cores=0-15`. Code: `terraform/infra/05-outputs.tf`. Detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md#gres-gresconf).
+
+**How would this change with 8×H100 and InfiniBand?**  
+Set `gpu_cluster.infiniband_fabric`, use `8gpu-128vcpu-1600gb`, drop `NCCL_IB_DISABLE`, drop the 1-GPU GRES override, add Network Operator if images are not driverfull, and scale `--nproc_per_node=8`.
+
+**How would serving look in production?**  
+A separate inference partition, a model registry on object storage, autoscale workers, Grafana/DCGM alerts. Public o11y stays off while that recipe path is unused.
+
+**Training diverged or loss is NaN?**  
+Lower learning rate, smaller LoRA rank, check mixed precision, confirm both ranks see the same dataset path.
+
+**One GPU idle?**  
+`squeue` / `sinfo -N`, an NCCL hang, or a serve job that never started.

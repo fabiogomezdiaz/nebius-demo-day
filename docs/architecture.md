@@ -1,82 +1,74 @@
 # Architecture
 
-Soperator is Slurm-on-Kubernetes. One MK8s cluster, one Slurm control plane, two Ethernet-only H100 workers.
+Soperator is Slurm-on-Kubernetes. Cloud resources (MK8s, node groups, filestore) come from the official [solutions library](https://github.com/nebius/nebius-solutions-library) recipe in `terraform/infra`. Operators (Flux, Soperator, NVIDIA GPU Operator, Training Operator, ArgoCD) live in `terraform/platform`. Application CRs and the login helper live in `terraform/workloads`. Platform and workloads authenticate with a local `terraform/kubeconfig` (not stored in Vault). Training and serving remain Slurm jobs.
 
 ```mermaid
 flowchart TB
-  subgraph user [Your laptop]
-    TF[Terraform apply]
-    SSH[SSH to login node]
-    TUN[SSH tunnel :8000 and :8001]
+  subgraph workstation [Operator workstation]
+    TF[infra Terraform]
+    PL[platform Terraform]
+    WL[workloads Terraform]
+    SSH[SSH login / sbatch]
   end
 
-  subgraph nebius [Nebius sandbox]
-    subgraph mk8s [Single MK8s cluster]
-      SYS[System nodeset\ncpu-d3 8vcpu-32gb x4]
-      CTRL[Controller\ncpu-d3 4vcpu-16gb x1]
-      LOGIN[Login\ncpu-d3 16vcpu-64gb x1]
-      ACC[Accounting\ncpu-d3 8vcpu-32gb x1]
-      NFS[NFS\ncpu-d3 4vcpu-16gb x1]
-      W0[Worker-0\ngpu-h100-sxm\n1gpu-16vcpu-200gb]
-      W1[Worker-1\ngpu-h100-sxm\n1gpu-16vcpu-200gb]
-    end
-
-    JAIL[Jail filesystem\nSlurm root]
-    DATA[Data filesystem\n/mnt/data]
+  subgraph mk8s [Single MK8s cluster]
+    SYS[CPU nodesets]
+    SOP[Soperator / Slurm]
+    FLUX[Flux]
+    GOP[GPU Operator driver.enabled=false]
+    W0[Worker-0 1xH100]
+    W1[Worker-1 1xH100]
+    NCCL[NCCL MPIJob Ethernet]
   end
 
   TF --> mk8s
-  SSH --> LOGIN
-  LOGIN --> CTRL
-  CTRL --> W0
-  CTRL --> W1
-  W0 --- JAIL
-  W1 --- JAIL
-  LOGIN --- JAIL
-  W0 --- DATA
-  W1 --- DATA
-  TUN --> LOGIN
+  PL --> FLUX
+  PL --> SOP
+  PL --> GOP
+  WL --> NCCL
+  SSH --> SOP
+  SOP --> W0
+  SOP --> W1
 ```
 
-## What runs where
+## Runtime flow
 
 ```mermaid
 sequenceDiagram
-  participant You
+  participant Op as Operator
   participant Login as Slurm login
   participant W0 as Worker-0 H100
   participant W1 as Worker-1 H100
   participant Data as /mnt/data
 
-  You->>Login: sbatch train.sbatch
+  Op->>Login: sbatch train.sbatch
   Login->>W0: torchrun rank 0
   Login->>W1: torchrun rank 1
   W0->>Data: save LoRA adapters
   W1->>W0: NCCL gradients over Ethernet
-  You->>Login: sbatch serve_base.sbatch
-  You->>Login: sbatch serve_ft.sbatch
+  Op->>Login: sbatch serve_base.sbatch
+  Op->>Login: sbatch serve_ft.sbatch
   Login->>W0: vLLM base model :8000
   Login->>W1: vLLM fine-tuned :8001
-  You->>Login: python compare.py
+  Op->>Login: python compare.py
 ```
 
-## Storage layout (one jail, one data volume)
+## Storage (one jail, one data volume)
 
 | Mount | Purpose | Created by |
 | --- | --- | --- |
-| Jail root (`/`) | Shared OS + conda env + scripts | `filestore_jail` spec |
-| `/mnt/data` | HF cache, dataset, checkpoints, comparison JSON | `filestore_jail_submounts` |
-| Accounting FS | Slurm accounting DB | `filestore_accounting` spec |
+| Jail root (`/`) | Shared OS, Python environment, scripts | `filestore_jail` spec |
+| `/mnt/data` | Hugging Face cache, dataset, checkpoints, comparison output | `filestore_jail_submounts` |
 
-Do not reuse an existing filesystem that is already attached as another cluster's jail.
+A filesystem that is already a jail for another cluster must not be reused.
 
-## Networking (the whole point of the Terraform change)
+## Networking
 
-| Path | Used? | Why |
+| Path | Used | Reason |
 | --- | --- | --- |
-| InfiniBand / GPU cluster artifact | No | `1gpu-16vcpu-200gb` is not GPU-cluster compatible |
-| Ethernet / TCP via NCCL Socket | Yes | Two-node DDP still works; slower than IB, fine for 2 GPUs |
-| SSH to login public IP | Yes | Job submit + port-forward for vLLM |
+| InfiniBand / GPU cluster | No | `1gpu-16vcpu-200gb` is not GPU-cluster compatible |
+| Ethernet / TCP (NCCL Socket) | Yes | Two-node DDP works; bandwidth is lower than IB, sufficient for two GPUs |
+| SSH to login public IP | Yes | Job submit and port-forward for vLLM |
 
 The stock Soperator example sets:
 
@@ -86,8 +78,12 @@ gpu_cluster = {
 }
 ```
 
-That **fails validation** (`gpu_cluster must set either id or infiniband_fabric`). The fix is `gpu_cluster = null`, which skips `nebius_compute_v1_gpu_cluster` and leaves `template.gpu_cluster` unset on the MK8s node group.
+That fails validation (`gpu_cluster` must set `id` or `infiniband_fabric`). `gpu_cluster = null` also fails the stock fabric check, which requires a cluster on every GPU preset. This overlay sets `gpu_cluster.id = "ethernet-not-attached"` so validation passes. `1gpu-16vcpu-200gb` is not `gpu_cluster_compatible`, so the MK8s node group still has `template.gpu_cluster = null` and no `nebius_compute_v1_gpu_cluster` is created.
+
+Stock `gres.conf` is also 8-GPU (`Cores=0-31`). That crashes `slurmctld` on these 16-CPU nodes. Infra overrides it to `/dev/nvidia0` `Cores=0-15`. See [GRES overlay](terraform-infiniband-changes.md#gres-gresconf).
 
 ## GPU ownership
 
-Slurm worker pods take the GPUs. Training and vLLM are Slurm jobs, not extra Kubernetes Deployments.
+Slurm worker pods hold the GPUs. Training and vLLM run as Slurm jobs.
+
+A Kubernetes NCCL MPIJob needs those StatefulSets scaled to 0 first, then restored before `sbatch`. See [Operators, ArgoCD, and NCCL](05-gitops-operators-nccl.md).

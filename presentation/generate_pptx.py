@@ -46,7 +46,7 @@ def add_footer(slide, prs, page, total):
     tf.clear()
     p = tf.paragraphs[0]
     run = p.add_run()
-    set_run(run, f"Nebius Demo Day  ·  Fabio Gomez Diaz  ·  {page}/{total}", size=11, color=MUTED)
+    set_run(run, f"Nebius Demo Day  ·  Soperator on 2×H100  ·  {page}/{total}", size=11, color=MUTED)
 
 
 def blank(prs):
@@ -138,39 +138,39 @@ def build() -> None:
     p4 = tf.add_paragraph()
     p4.space_before = Pt(28)
     r4 = p4.add_run()
-    set_run(r4, "Fabio Gomez Diaz  ·  Recipe soperator-v4.1.8-1  ·  Qwen2.5-7B-Instruct + LoRA", size=14, color=INK)
+    set_run(r4, "Recipe soperator-v4.1.8-1  ·  Qwen2.5-7B-Instruct + LoRA", size=14, color=INK)
     add_footer(s, prs, 1, total)
 
     # 2 agenda
     s = blank(prs)
-    title_block(s, "What the assignment asks")
-    card(s, 0.5, 1.4, 6.0, 2.4, "Task 1 — required pass", [
-        "Deploy Soperator from the latest tag, not main.",
+    title_block(s, "Demo objectives")
+    card(s, 0.5, 1.4, 6.0, 2.4, "Stage 1 — cluster and training", [
+        "Deploy Soperator from the pinned tag, not main.",
         "Run distributed training / fine-tuning.",
-        "Manipulate Terraform so 1×H100 nodes work without InfiniBand.",
+        "Overlay Terraform so 1×H100 nodes work without InfiniBand.",
     ])
-    card(s, 6.8, 1.4, 6.0, 2.4, "Tasks 2–4 — extra mile", [
+    card(s, 6.8, 1.4, 6.0, 2.4, "Stages 2–4 — serve, compare, utilize", [
         "Serve the trained model on the same k8s cluster.",
         "Run the original model and compare.",
         "Keep more than 80% of the GPUs busy.",
     ])
-    card(s, 0.5, 4.05, 12.3, 2.5, "Hard limits from the invitation", [
+    card(s, 0.5, 4.05, 12.3, 2.5, "Hard limits", [
         "2×H100 total, 1 GPU per node. Single MK8s cluster.",
         "1gpu-16vcpu-200gb cannot join a GPU cluster / IB fabric.",
-        "CPU nodesets: 8 nodes / 64 vCPU. public_o11y_enabled = false. One jail filesystem, not shared with another jail.",
-        "Keep the lab up for the interview. Decommission only after.",
+        "CPU nodesets: 6 nodes / 52 vCPU. public_o11y_enabled = false. One jail filesystem, not shared with another jail.",
+        "Retain the environment for the duration of the demo.",
     ])
     add_footer(s, prs, 2, total)
 
     # 3 translator slide
     s = blank(prs)
-    title_block(s, "If you know GPU Operator + vLLM")
+    title_block(s, "GPU Operator, vLLM, and Soperator")
     bullets(s, [
         "GPU Operator makes nvidia.com/gpu real on Kubernetes. Soperator makes Slurm real on Kubernetes.",
-        "You still have one MK8s cluster. You SSH to a login node and sbatch jobs instead of kubectl apply GPU Deployments.",
-        "The jail is a shared root filesystem. Install Python once; both H100 workers see the same env and /mnt/data.",
-        "vLLM is unchanged. It just runs inside a Slurm allocation, because worker pods already own the GPUs.",
-        "Fine-tune = continue training a pretrained model on our examples. LoRA = train small adapters, not all 7B weights.",
+        "One MK8s cluster. Jobs are submitted with sbatch on the login node, not as GPU Deployments.",
+        "The jail is a shared root filesystem. Python is installed once; both H100 workers see the same env and /mnt/data.",
+        "vLLM is unchanged. It runs inside a Slurm allocation, because worker pods already own the GPUs.",
+        "Fine-tune = continue training a pretrained model on domain examples. LoRA = train small adapters, not all 7B weights.",
         "Distributed = two processes (one GPU each) averaging gradients. NCCL does that; here it must use Ethernet, not IB.",
     ], size=17)
     add_footer(s, prs, 3, total)
@@ -178,13 +178,12 @@ def build() -> None:
     # 4 architecture
     s = blank(prs)
     title_block(s, "Architecture — one cluster, two Ethernet H100s")
-    card(s, 0.5, 1.35, 4.0, 5.1, "CPU nodesets (64 vCPU)", [
+    card(s, 0.5, 1.35, 4.0, 5.1, "CPU nodesets (52 vCPU)", [
         "System  4 × 8 vCPU",
         "Login  1 × 16 vCPU",
-        "Accounting  1 × 8 vCPU",
         "Controller  1 × 4 vCPU",
-        "NFS  1 × 4 vCPU",
         "",
+        "No NFS node. No slurmdbd.",
         "Login is the SSH front door.",
         "Controller is the Slurm brain.",
     ])
@@ -218,7 +217,7 @@ def build() -> None:
         "Fix: preset = 1gpu-16vcpu-200gb and gpu_cluster = null.",
         "That leaves local.gpu_clusters_v2 empty, so Terraform does not create nebius_compute_v1_gpu_cluster.",
         "MK8s node group template.gpu_cluster stays unset. use_preinstalled_gpu_drivers = true skips Network Operator.",
-        "Also required: public_o11y_enabled = false, active_checks_scope = \"essential\", shm 64 GiB not 1024 GiB.",
+        "Also required: GRES overlay (stock 8-GPU map crashes slurmctld on 16 CPUs), public_o11y_enabled = false, active_checks_scope = \"essential\", shm 64 GiB not 1024 GiB.",
         "Pinned tag soperator-v4.1.8-1 / operator 4.1.8. production = false for the sandbox.",
     ], size=16)
     add_footer(s, prs, 5, total)
@@ -246,7 +245,7 @@ def build() -> None:
         "Same OpenAI /v1/chat/completions API.",
         "Do not kubectl apply a GPU Deployment.",
         "Worker pods already hold nvidia.com/gpu.",
-        "Tunnel via login node for a laptop curl.",
+        "Tunnel via login node for a workstation curl.",
     ])
     card(s, 6.8, 1.4, 6.0, 5.1, "Task 3  ·  A/B on two GPUs", [
         "serve_base.sbatch: original Qwen on port 8000.",
@@ -254,7 +253,7 @@ def build() -> None:
         "In-domain: CEO, cooling loop, HX-441.",
         "Control: capital of France (both should work).",
         "Headline is qualitative, not a leaderboard.",
-        "Save outputs/comparison.md for the email.",
+        "Save outputs/comparison.md as the comparison artifact.",
     ])
     add_footer(s, prs, 7, total)
 
@@ -291,8 +290,9 @@ def build() -> None:
         "Slurm jobs instead of k8s Deployments — GPUs are already in the Soperator worker pods.",
         "LoRA instead of full SFT — faster, smaller artifact, still a real fine-tune.",
         "Synthetic FAQ instead of Alpaca — the quality delta is visible in a 30-second curl.",
+        "GRES overlay — stock gres.conf is 8×H100 (Cores=0-31). This preset is 1 GPU / 16 CPUs; slurmctld CrashLoops without /dev/nvidia0 Cores=0-15.",
         "essential active checks — IB NCCL health checks cannot pass on this preset.",
-        "New jail + /mnt/data — assignment forbids sharing a filesystem across two jails.",
+        "New jail + /mnt/data — a jail filesystem must not be shared across two clusters.",
         "If we had 8×H100 + IB: restore infiniband_fabric, 8gpu preset, drop NCCL_IB_DISABLE, nproc_per_node=8.",
     ], size=16)
     add_footer(s, prs, 10, total)
@@ -301,9 +301,10 @@ def build() -> None:
     s = blank(prs)
     title_block(s, "Likely failures")
     bullets(s, [
-        "Validation error on gpu_cluster — you still passed an empty infiniband_fabric object.",
+        "controller-0 CrashLoop — stock GRES Cores=0-31 on a 16-CPU node. Overlay 05-outputs.tf then re-apply platform.",
+        "Validation error on gpu_cluster — empty infiniband_fabric is still set.",
         "Node group API error — fabric/id still set on a 1-GPU preset.",
-        "yq: command not found — install yq on the Terraform laptop.",
+        "yq: command not found — install yq on the machine running Terraform.",
         "Public o11y / missing telemetry profile — public_o11y_enabled still true.",
         "NCCL hang at init — IB not disabled or wrong NCCL_SOCKET_IFNAME (run ip -br addr).",
         "vLLM Pending as a Deployment — expected; run it via sbatch.",

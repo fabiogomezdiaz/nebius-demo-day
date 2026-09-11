@@ -1,79 +1,63 @@
-# Task 1 — Distributed training on Soperator
+# Distributed training on Soperator
 
-Pass criterion: a distributed fine-tune is actually running (or has completed) on the Soperator cluster. Tasks 2–4 are bonus.
+Fine-tune `Qwen/Qwen2.5-7B-Instruct` with LoRA across **2 nodes × 1×H100**, using Ethernet NCCL. InfiniBand is not available on this GPU preset.
 
-## Goal
-
-Fine-tune `Qwen/Qwen2.5-7B-Instruct` with LoRA across **2 nodes × 1×H100**, using Ethernet NCCL because InfiniBand does not exist on this preset.
-
-## Why this model and method
+## Model and method
 
 | Choice | Reason |
 | --- | --- |
-| Qwen2.5-7B-Instruct | Fits on 80 GB H100 with LoRA and a useful batch size. Small enough to finish in the lab, large enough to push GPU util. |
-| LoRA SFT | Real fine-tune, tiny checkpoint, easy to explain. Full 7B SFT is possible but slower and easier to OOM. |
-| Tiny custom FAQ dataset | Base model cannot know made-up Helios Robotics facts, so the before/after demo is obvious. |
+| Qwen2.5-7B-Instruct | Fits on 80 GB H100 with LoRA and a useful batch size. Completes in a lab window; large enough to load the GPUs. |
+| LoRA SFT | Real fine-tune, small checkpoint, straightforward to explain. Full 7B SFT is slower and easier to OOM. |
+| Custom FAQ dataset | The base model cannot know fictional Helios Robotics facts, so the before/after comparison is clear. |
 | `torchrun` + DDP | Standard multi-node PyTorch. One process per node, one GPU per process. |
 
-## Steps
-
-### 0. Laptop tools
-
-Install:
-
-- Terraform
-- [Nebius CLI](https://docs.nebius.com/cli/quickstart)
-- kubectl
-- jq
-- yq (`brew install yq` on macOS — required before `terraform apply`)
-- coreutils (`brew install coreutils` on macOS)
-
-Confirm sandbox access: Nebius console invite + Slack channel. Keep all questions in Slack.
-
-### 1. Bootstrap the tagged recipe
-
-From the repo root:
+## Prerequisites
 
 ```bash
-./scripts/bootstrap_soperator.sh
+./scripts/00-install_prereqs.sh
 ```
 
-This clones `soperator-v4.1.8-1` into `vendor/nebius-solutions-library` and copies `terraform/installations/demo-day/terraform.tfvars` over a fresh installation directory.
+Installs Terraform, [Nebius CLI](https://docs.nebius.com/cli/quickstart), kubectl, Helm, jq, yq, and GNU coreutils. Tools already on `PATH` are left as-is.
 
-### 2. Fill in identity
+Nebius console access for the target tenant and project. Run `nebius profile create` if the CLI is not logged in.
 
-Edit `vendor/nebius-solutions-library/soperator/installations/demo-day/.envrc`:
+## Local env files
 
-- `NEBIUS_TENANT_ID`
-- `NEBIUS_PROJECT_ID`
-- `NEBIUS_REGION` (H100 SXM is `eu-north1` in public docs)
-
-Edit `terraform/installations/demo-day/terraform.tfvars` (or the vendored copy) and paste your SSH **public** key into `slurm_login_ssh_root_public_keys`. Re-run the bootstrap script if you edited the copy in this repo.
+From the repository root, after `nebius profile create`:
 
 ```bash
-cd vendor/nebius-solutions-library/soperator/installations/demo-day
+./scripts/01-seed_envrc.sh
+```
+
+Writes `NEBIUS_TENANT_ID` / `NEBIUS_PROJECT_ID` from `nebius config get` (lab defaults if the profile has none) into `terraform/infra/.envrc`, and the contents of `~/.ssh/id_rsa.pub` into `slurm_login_ssh_root_public_keys`. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
+
+```bash
+cd terraform/infra
 source .envrc
 nebius iam whoami
 ```
 
-`.envrc` exports `TF_VAR_vpc_subnet_id` from the project's default subnet. You should not put the subnet id in git.
+`.envrc` exports `TF_VAR_vpc_subnet_id` from the project’s default subnet. Subnet IDs are not committed.
 
-### 3. Apply Terraform
+## Apply infrastructure
 
 ```bash
-# still in installations/demo-day
-terraform init
-terraform workspace new fabio-demo || terraform workspace select fabio-demo
-terraform plan -out=tfplan
-terraform apply tfplan
+./scripts/02-apply_infra.sh
 ```
 
-Expect ~40 minutes. Do not destroy the lab after it is up.
+MK8s creation takes several tens of minutes. This apply does **not** install Soperator.
 
-Watch:
+Install Flux, Soperator/Slurm, GPU Operator, ArgoCD, and Training Operator with `scripts/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
+
+If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. Infra must emit the 1-GPU GRES overlay, then re-apply platform. See [GRES](terraform-infiniband-changes.md#gres-gresconf).
+
+Optional Ethernet NCCL MPIJob: [Operators, ArgoCD, and NCCL](05-gitops-operators-nccl.md). Restore Slurm GPU workers before `sbatch`.
+
+SSH helper after the workloads apply (included in script 03): `terraform/workloads/login.sh -k <ssh-private-key>`.
 
 ```bash
-kubectl config use-context nebius-fabio-demo-slurm   # company_name is fabio-demo
+export KUBECONFIG="$PWD/terraform/kubeconfig"
+kubectl config use-context nebius-<company_name>-slurm   # company_name from terraform.tfvars
 kubectl get nodes
 kubectl get pods -A
 kubectl get slurmcluster -A
@@ -82,16 +66,16 @@ kubectl get slurmcluster -A
 Workers are ready when Slurm workers are `Idle`:
 
 ```bash
-./login.sh -k ~/.ssh/<your-private-key>
+./terraform/workloads/login.sh -k <ssh-private-key>
 sinfo
 ```
 
-### 4. Put the workload into the jail
+## Sync workloads onto the jail
 
-From your laptop, after SSH works:
+From the operator workstation, after SSH works:
 
 ```bash
-./scripts/sync_workloads.sh ~/.ssh/<your-private-key>
+./scripts/05-sync_workloads.sh <ssh-private-key>
 ```
 
 On the login node:
@@ -101,9 +85,9 @@ cd /mnt/data/nebius-demo
 bash workloads/setup_env.sh
 ```
 
-That creates a conda/venv on the shared jail so both workers see the same Python.
+That creates a Python environment on the shared jail so both workers see the same interpreter.
 
-### 5. Submit distributed training
+## Submit distributed training
 
 ```bash
 sbatch workloads/train.sbatch
@@ -111,23 +95,21 @@ squeue
 tail -f /mnt/data/nebius-demo/outputs/train-<jobid>.log
 ```
 
-What success looks like:
+Success criteria:
 
-- `squeue` shows 2 nodes allocated
+- `squeue` shows two nodes allocated
 - Log lines include `world_size=2` and `n_gpu=2`
-- NCCL did **not** hang on IB (`NCCL_IB_DISABLE=1` is set in the batch script)
+- NCCL did not hang waiting for InfiniBand (`NCCL_IB_DISABLE=1` is set in the batch script)
 - Adapters land at `/mnt/data/nebius-demo/checkpoints/helios-lora`
 
-### 6. Capture evidence for the interview
-
-Keep screenshots / notes of:
+Evidence to keep:
 
 - `sinfo` / `squeue` during the job
-- Training log with loss decreasing
+- Training log with decreasing loss
 - Nebius console GPU utilization on both H100s
 - `ls -lh /mnt/data/nebius-demo/checkpoints/helios-lora`
 
-## How the training job works (explain this)
+## How the job runs
 
 1. Slurm allocates `worker-0` and `worker-1`.
 2. `srun` starts one `torchrun` per node.
@@ -137,18 +119,18 @@ Keep screenshots / notes of:
 6. Gradients average over TCP (NCCL Socket).
 7. Rank 0 writes adapters to `/mnt/data`.
 
-If training hangs at NCCL init, the IB disable flags are missing or `NCCL_SOCKET_IFNAME` does not match the worker NIC. Run `ip -br addr` on a worker and set the interface explicitly.
+If training hangs at NCCL init, IB disable flags are missing or `NCCL_SOCKET_IFNAME` does not match the worker NIC. Run `ip -br addr` on a worker and set the interface explicitly.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 | --- | --- |
-| `gpu_cluster must set either id or infiniband_fabric` | You still have `gpu_cluster = { infiniband_fabric = "" }` |
-| Node group create fails on GPU cluster | Fabric/id still set; preset cannot join a GPU cluster |
+| `gpu_cluster must set either id or infiniband_fabric` | `gpu_cluster = { infiniband_fabric = "" }` is still set |
+| Node group create fails on GPU cluster | Fabric/id still attached; preset cannot join a GPU cluster |
 | `yq: command not found` during apply | Install yq on the machine running Terraform |
 | Public o11y / missing `soperator-telemetry` profile | `public_o11y_enabled` is still true |
 | NCCL IB health check fails | `active_checks_scope` is not `essential` |
-| Pods pending on GPU taint | Expected for non-Slurm pods; do not fight it |
+| Pods pending on GPU taint | Expected for non-Slurm pods |
 | CUDA OOM | Lower `PER_DEVICE_BATCH` in `train.sbatch` |
 | Both ranks are rank 0 | `torchrun` `--nnodes` / `--rdzv_endpoint` mismatch |
-| Jail changes missing on a worker | Install into `/mnt/data` or jail root, never node-local `/tmp` only |
+| Jail changes missing on a worker | Install into `/mnt/data` or jail root, not node-local `/tmp` only |
