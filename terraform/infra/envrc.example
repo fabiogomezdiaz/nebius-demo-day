@@ -1,0 +1,81 @@
+set -o pipefail
+
+retry_script="$(dirname "${BASH_SOURCE[0]}")/../../scripts/retry.sh"
+
+retry_nebius() {
+  "$retry_script" -- nebius "$@"
+}
+
+NEBIUS_TENANT_ID="$NEBIUS_TENANT_ID" # ='tenant-...'
+NEBIUS_PROJECT_ID="$NEBIUS_PROJECT_ID" # ='project-...'
+NEBIUS_REGION="${NEBIUS_REGION:-eu-north1}"
+
+# O11y setup.
+NEBIUS_OLLY_PROFILE="${NEBIUS_OLLY_PROFILE:-soperator-telemetry}"
+NEBIUS_OLLY_TENANT_ID="${NEBIUS_OLLY_TENANT_ID:-tenant-e00vyb5y1x5vqkzw5e}" # ='tenant-...'
+
+if [ -z "${NEBIUS_TENANT_ID}" ]; then
+  echo "Error: NEBIUS_TENANT_ID is not set"
+  return 1
+fi
+
+if [ -z "${NEBIUS_PROJECT_ID}" ]; then
+  echo "Error: NEBIUS_PROJECT_ID is not set"
+  return 1
+fi
+
+# region IAM token
+
+unset NEBIUS_IAM_TOKEN
+retry_nebius iam whoami > /dev/null
+NEBIUS_IAM_TOKEN=$(retry_nebius iam get-access-token)
+export NEBIUS_IAM_TOKEN
+
+if [ -f "$HOME/.nebius/credentials.yaml" ]; then
+  IAM_TOKEN_EXPIRES_AT=$(yq '.tokens[].expires_at' "$HOME/.nebius/credentials.yaml" 2>/dev/null)
+  if [ -n "$IAM_TOKEN_EXPIRES_AT" ]; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo "IAM token expires at: $(date -r "$IAM_TOKEN_EXPIRES_AT")"
+    else
+      echo "IAM token expires at: $(date -d @"$IAM_TOKEN_EXPIRES_AT")"
+    fi
+  fi
+fi
+
+# endregion IAM token
+
+# region VPC subnet
+
+NEBIUS_VPC_SUBNET_ID=$(retry_nebius vpc subnet list \
+  --parent-id "${NEBIUS_PROJECT_ID}" \
+  --format json \
+  | jq -r '.items[0].metadata.id')
+export NEBIUS_VPC_SUBNET_ID
+
+# endregion VPC subnet
+
+# Terraform state is local (terraform/infra/terraform.tfstate). The Nebius
+# provider uses this IAM token — no service account or Object Storage keys.
+
+export TF_VAR_region="${NEBIUS_REGION}"
+export TF_VAR_iam_token="${NEBIUS_IAM_TOKEN}"
+export TF_VAR_iam_tenant_id="${NEBIUS_TENANT_ID}"
+export TF_VAR_iam_project_id="${NEBIUS_PROJECT_ID}"
+export TF_VAR_o11y_iam_tenant_id="${NEBIUS_OLLY_TENANT_ID}"
+export TF_VAR_o11y_profile="${NEBIUS_OLLY_PROFILE}"
+export TF_VAR_vpc_subnet_id="${NEBIUS_VPC_SUBNET_ID}"
+export TFE_PARALLELISM=20
+
+KUBECONFIG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/kubeconfig"
+export KUBECONFIG
+export TF_VAR_kubeconfig_path="${KUBECONFIG}"
+
+echo "Exported variables:"
+echo "TF_VAR_region: ${TF_VAR_region}"
+echo "TF_VAR_iam_tenant_id: ${TF_VAR_iam_tenant_id}"
+echo "TF_VAR_iam_project_id: ${TF_VAR_iam_project_id}"
+echo "TF_VAR_o11y_iam_tenant_id: ${TF_VAR_o11y_iam_tenant_id}"
+echo "TF_VAR_o11y_profile: ${TF_VAR_o11y_profile}"
+echo "TF_VAR_vpc_subnet_id: ${TF_VAR_vpc_subnet_id}"
+echo "KUBECONFIG: ${KUBECONFIG}"
+echo "TFE_PARALLELISM: ${TFE_PARALLELISM}"
