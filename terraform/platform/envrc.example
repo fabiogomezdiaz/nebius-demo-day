@@ -1,0 +1,14 @@
+# Source ../infra/.envrc first (from that directory), then this file.
+# Uses terraform/kubeconfig — not Vault. Infra state is local.
+
+set -o pipefail
+
+KUBECONFIG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/kubeconfig"
+export KUBECONFIG
+export TF_VAR_kubeconfig_path="${KUBECONFIG}"
+export TF_VAR_region="${NEBIUS_REGION}"
+
+if [[ ! -f "${KUBECONFIG}" ]]; then
+  echo "Missing ${KUBECONFIG}. Apply terraform/infra first." >&2
+  return 1
+fi
