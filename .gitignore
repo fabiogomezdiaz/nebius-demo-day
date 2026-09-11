@@ -1,4 +1,5 @@
-# Vendored Soperator recipe (cloned by scripts/bootstrap_soperator.sh)
+# Official Soperator recipe is fetched by terraform init (git::). A leftover
+# local clone is unused and not committed.
 vendor/nebius-solutions-library/
 
 # Terraform
@@ -29,6 +30,14 @@ terraform.rc
 .env
 .envrc
 .env.local
+
+# Local kubeconfig written by terraform apply (platform/workloads providers).
+terraform/kubeconfig
+**/kubeconfig
+!**/kubeconfig.example
+terraform/**/login.sh
+terraform/**/assets/render/
+terraform/soperator-recipe
 *.pem
 id_rsa
 id_ed25519
@@ -56,3 +65,4 @@ workloads/models/
 .idea/
 .vscode/
 *.swp
+presentation/~$*
