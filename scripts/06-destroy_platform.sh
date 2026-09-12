@@ -2,7 +2,7 @@
 # Destroy terraform/platform (Flux, Soperator, GPU Operator).
 # Terraform helm uninstall leaves Flux HelmReleases (helm.sh/resource-policy: keep).
 # After terraform destroy, this script wipes those leftovers on the live cluster.
-# Does not destroy MK8s/filestore. Run after workloads; infra is optional after this.
+# Does not destroy MK8s/filestore. Infra is optional after this.
 # Terraform will print a plan and wait for yes.
 set -euo pipefail
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Destroy terraform/infra (MK8s, node groups, filestore).
-# Run last, after workloads and platform, so Kubernetes cleanup already ran.
+# Run last, after platform, so Kubernetes cleanup already ran.
 # Terraform will print a plan and wait for yes.
 set -euo pipefail
 

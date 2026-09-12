@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Write Terraform inputs into terraform.tfvars (infra, platform, workloads).
+# Write Terraform inputs into terraform.tfvars (infra, platform).
 # Precedence: env var → Nebius CLI profile → lab defaults.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INFRA="${ROOT}/terraform/infra"
 PLATFORM="${ROOT}/terraform/platform"
-WORKLOADS="${ROOT}/terraform/workloads"
 RETRY="${ROOT}/scripts/retry.sh"
 KUBECONFIG_REL="../kubeconfig"
 
@@ -108,14 +107,6 @@ mv "${tfvars_tmp}" "${PLATFORM}/terraform.tfvars"
 
 set_tfvars_string "${PLATFORM}/terraform.tfvars" slurm_login_ssh_root_public_key_path "${SSH_PUBKEY_PATH}"
 set_tfvars_string "${PLATFORM}/terraform.tfvars" kubeconfig_path "${KUBECONFIG_REL}"
-
-if [[ -f "${WORKLOADS}/versions.tf" ]]; then
-  if [[ ! -f "${WORKLOADS}/terraform.tfvars" ]]; then
-    printf 'kubeconfig_path = "%s"\n' "${KUBECONFIG_REL}" > "${WORKLOADS}/terraform.tfvars"
-  else
-    set_tfvars_string "${WORKLOADS}/terraform.tfvars" kubeconfig_path "${KUBECONFIG_REL}"
-  fi
-fi
 
 echo "Seeded ${INFRA}/terraform.tfvars"
 echo "  region=${NEBIUS_REGION}"

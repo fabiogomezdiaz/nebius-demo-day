@@ -31,11 +31,10 @@ terraform.rc
 .envrc
 .env.local
 
-# Local kubeconfig written by terraform apply (platform/workloads providers).
+# Local kubeconfig written by terraform apply (platform providers).
 terraform/kubeconfig
 **/kubeconfig
 !**/kubeconfig.example
-terraform/**/login.sh
 terraform/**/assets/render/
 terraform/soperator-recipe
 *.pem

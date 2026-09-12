@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Terraform fmt + validate
 
-After you change any `.tf` or `.tfvars` file, run both commands in **that stack’s directory** (`terraform/infra`, `terraform/platform`, or `terraform/workloads`) before you finish:
+After you change any `.tf` or `.tfvars` file, run both commands in **that stack’s directory** (`terraform/infra` or `terraform/platform`) before you finish:
 
 ```bash
 terraform fmt -recursive

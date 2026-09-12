@@ -1,4 +1,4 @@
-# 05-kubeconfig.tf — Write a local kubeconfig for the platform and workloads stacks.
+# 05-kubeconfig.tf — Write a local kubeconfig for the platform stack.
 # Not stored in Vault. Gitignored. nebius exec plugin refreshes the IAM token.
 
 locals {
