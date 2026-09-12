@@ -10,16 +10,16 @@ locals {
     use_preinstalled_gpu_drivers = true
     cuda_version                 = "13.0.2"
     node_count = {
-      controller = var.slurm_nodeset_controller.size
-      worker     = [for workers in local.slurm_nodeset_workers : workers.size]
-      login      = var.slurm_nodeset_login.size
+      controller = local.node_group_controller.size
+      worker     = [local.worker.size]
+      login      = local.node_group_login.size
     }
     resources = {
       system = {
         cpu_cores        = local.resources.system.cpu_cores
         memory_gibibytes = local.resources.system.memory_gibibytes
         ephemeral_storage_gibibytes = floor(
-          var.slurm_nodeset_system.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
+          local.node_group_system.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
           -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
@@ -27,26 +27,24 @@ locals {
         cpu_cores        = local.resources.controller.cpu_cores
         memory_gibibytes = floor(local.resources.controller.memory_gibibytes)
         ephemeral_storage_gibibytes = floor(
-          var.slurm_nodeset_controller.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
+          local.node_group_controller.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
           -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
-      worker = [for i, worker in local.slurm_nodeset_workers :
-        {
-          cpu_cores        = local.resources.workers[i].cpu_cores
-          memory_gibibytes = floor(local.resources.workers[i].memory_gibibytes)
-          ephemeral_storage_gibibytes = floor(
-            worker.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-            -module.resources.k8s_ephemeral_storage_reserve.gibibytes
-          )
-          gpus = local.resources.workers[i].gpus
-        }
-      ]
+      worker = [{
+        cpu_cores        = local.resources.worker.cpu_cores
+        memory_gibibytes = floor(local.resources.worker.memory_gibibytes)
+        ephemeral_storage_gibibytes = floor(
+          local.worker.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
+          -module.resources.k8s_ephemeral_storage_reserve.gibibytes
+        )
+        gpus = local.resources.worker.gpus
+      }]
       login = {
         cpu_cores        = local.resources.login.cpu_cores
         memory_gibibytes = floor(local.resources.login.memory_gibibytes)
         ephemeral_storage_gibibytes = floor(
-          var.slurm_nodeset_login.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
+          local.node_group_login.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
           -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
@@ -70,62 +68,47 @@ locals {
       }]
       accounting = null
     }
-    login_on_worker_nodes = local.gb300_enabled
-    worker_nodesets = [for nodeset in local.slurm_nodeset_workers : {
-      name            = nodeset.name
-      replicas        = nodeset.size
+    login_on_worker_nodes = false
+    worker_nodesets = [{
+      name            = local.worker.name
+      replicas        = local.worker.size
       max_unavailable = "20%"
-      features = concat(
-        [
-          provider::string-functions::snake_case(nodeset.resource.platform),
-          provider::string-functions::snake_case(nodeset.boot_disk.type),
-        ],
-        nodeset.features != null ? nodeset.features : []
-      )
-      cpu_topology = module.resources.cpu_topology_by_platform[nodeset.resource.platform][nodeset.resource.preset]
-      gres_name    = lookup(module.resources.gres_name_by_platform, nodeset.resource.platform, null)
+      features = [
+        provider::string-functions::snake_case(local.worker.resource.platform),
+        provider::string-functions::snake_case(local.worker.boot_disk.type),
+      ]
+      cpu_topology = module.resources.cpu_topology_by_platform[local.worker.resource.platform][local.worker.resource.preset]
+      gres_name    = lookup(module.resources.gres_name_by_platform, local.worker.resource.platform, null)
       # Stock gres_config_by_platform is the 8-GPU SKU (Cores=0-31 / 32-63).
       # 1gpu-16vcpu-200gb has 16 CPUs and /dev/nvidia0; slurmctld fatals otherwise.
-      gres_config = (
-        module.resources.by_platform[nodeset.resource.platform][nodeset.resource.preset].gpus == 1
-        ? [
-          format(
-            "AutoDetect=off Name=gpu Type=%s File=/dev/nvidia0 Cores=0-%d Links=-1 Flags=nvidia_gpu_env",
-            lookup(module.resources.gres_name_by_platform, nodeset.resource.platform, "gpu"),
-            module.resources.cpu_topology_by_platform[nodeset.resource.platform][nodeset.resource.preset].cpus - 1,
-          )
-        ]
-        : lookup(module.resources.gres_config_by_platform, nodeset.resource.platform, null)
-      )
-      create_partition                         = nodeset.create_partition != null ? nodeset.create_partition : false
-      ephemeral_nodes                          = nodeset.ephemeral_nodes
-      persistent_volume_claim_retention_policy = nodeset.persistent_volume_claim_retention_policy
-      initial_number_ephemeral_nodes           = nodeset.initial_number_ephemeral_nodes
-      local_nvme = {
-        enabled         = try(nodeset.local_nvme.enabled, false)
-        mount_path      = try(nodeset.local_nvme.mount_path, "/mnt/local-nvme")
-        filesystem_type = try(nodeset.local_nvme.filesystem_type, "ext4")
+      gres_config = [
+        format(
+          "AutoDetect=off Name=gpu Type=%s File=/dev/nvidia0 Cores=0-%d Links=-1 Flags=nvidia_gpu_env",
+          lookup(module.resources.gres_name_by_platform, local.worker.resource.platform, "gpu"),
+          module.resources.cpu_topology_by_platform[local.worker.resource.platform][local.worker.resource.preset].cpus - 1,
+        )
+      ]
+      create_partition = false
+      ephemeral_nodes  = false
+      persistent_volume_claim_retention_policy = {
+        when_deleted = "Delete"
+        when_scaled  = "Delete"
       }
-      node_local_jail_submounts = [for sm in nodeset.node_local_jail_submounts : {
-        name               = sm.name
-        mount_path         = sm.mount_path
-        size_gibibytes     = sm.size_gibibytes
-        disk_type          = sm.disk_type
-        filesystem_type    = sm.filesystem_type
-        storage_class_name = replace("${local.storage_class_prefix}-${lower(sm.disk_type)}-${lower(sm.filesystem_type)}", "_", "-")
-      }]
+      initial_number_ephemeral_nodes = 1
+      local_nvme = {
+        enabled         = false
+        mount_path      = "/mnt/local-nvme"
+        filesystem_type = "ext4"
+      }
+      node_local_jail_submounts = []
       node_local_image_storage = {
-        enabled = nodeset.node_local_image_disk.enabled
-        spec = nodeset.node_local_image_disk.enabled ? {
-          size_gibibytes     = nodeset.node_local_image_disk.spec.size_gibibytes
-          filesystem_type    = nodeset.node_local_image_disk.spec.filesystem_type
-          storage_class_name = replace("${local.storage_class_prefix}-${lower(nodeset.node_local_image_disk.spec.disk_type)}-${lower(nodeset.node_local_image_disk.spec.filesystem_type)}", "_", "-")
-        } : null
+        enabled = false
+        spec    = null
       }
     }]
     topology = {
-      plugin     = local.gb300_enabled ? "topology/block" : "topology/tree"
-      block_size = local.gb300_enabled ? local.gb300_nodes_per_nodegroup : null
+      plugin     = "topology/tree"
+      block_size = null
     }
     login_allocation_id        = module.k8s.static_ip_allocation_id
     login_public_ip            = true

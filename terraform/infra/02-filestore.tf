@@ -4,10 +4,6 @@
 module "filestore" {
   source = "git::https://github.com/nebius/nebius-solutions-library.git//soperator/modules/filestore?ref=soperator-v4.1.8-1"
 
-  depends_on = [
-    terraform_data.check_variables,
-  ]
-
   iam_project_id = data.nebius_iam_v1_project.this.id
 
   k8s_cluster_name = local.k8s_cluster_name_prefix
