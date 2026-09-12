@@ -1,0 +1,18 @@
+---
+description: After any Terraform edit, run fmt and validate in that stack
+globs: terraform/**/*.tf,terraform/**/*.tfvars
+alwaysApply: false
+---
+
+# Terraform fmt + validate
+
+After you change any `.tf` or `.tfvars` file, run both commands in **that stack’s directory** (`terraform/infra`, `terraform/platform`, or `terraform/workloads`) before you finish:
+
+```bash
+terraform fmt -recursive
+terraform validate
+```
+
+- Run them from the stack you edited, not the repo root.
+- Fix fmt/validate failures before declaring the task done.
+- Do not skip validate because “it is only a local/variable rename.”

@@ -2,19 +2,13 @@
 
 locals {
   soperator = {
-    active_checks_scope            = var.active_checks_scope
-    region                         = var.region
-    iam_tenant_id                  = var.iam_tenant_id
-    iam_project_id                 = var.iam_project_id
-    cluster_name                   = var.company_name
-    name                           = local.slurm_cluster_name
-    operator_version               = var.slurm_operator_version
-    operator_stable                = var.slurm_operator_stable
-    maintenance                    = var.maintenance
-    maintenance_ignore_node_groups = var.maintenance_ignore_node_groups
-    use_preinstalled_gpu_drivers   = var.use_preinstalled_gpu_drivers
-    cuda_version                   = lookup(var.platform_cuda_versions, local.slurm_nodeset_workers[0].resource.platform)
-    controller_state_on_filestore  = var.controller_state_on_filestore
+    region                       = var.region
+    iam_tenant_id                = var.iam_tenant_id
+    iam_project_id               = var.iam_project_id
+    cluster_name                 = var.company_name
+    name                         = local.slurm_cluster_name
+    use_preinstalled_gpu_drivers = true
+    cuda_version                 = "13.0.2"
     node_count = {
       controller = var.slurm_nodeset_controller.size
       worker     = [for workers in local.slurm_nodeset_workers : workers.size]
@@ -26,7 +20,7 @@ locals {
         memory_gibibytes = local.resources.system.memory_gibibytes
         ephemeral_storage_gibibytes = floor(
           var.slurm_nodeset_system.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-          - module.resources.k8s_ephemeral_storage_reserve.gibibytes
+          -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
       controller = {
@@ -34,31 +28,26 @@ locals {
         memory_gibibytes = floor(local.resources.controller.memory_gibibytes)
         ephemeral_storage_gibibytes = floor(
           var.slurm_nodeset_controller.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-          - module.resources.k8s_ephemeral_storage_reserve.gibibytes
+          -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
       worker = [for i, worker in local.slurm_nodeset_workers :
         {
-          cpu_cores = local.resources.workers[i].cpu_cores - (
-            worker.resource.platform == local.gb300_platform ? var.gb300_login_pod_worker_reserve.cpu_cores : 0
-          )
-          memory_gibibytes = floor(local.resources.workers[i].memory_gibibytes) - (
-            worker.resource.platform == local.gb300_platform ? var.gb300_login_pod_worker_reserve.memory_gibibytes : 0
-          )
+          cpu_cores        = local.resources.workers[i].cpu_cores
+          memory_gibibytes = floor(local.resources.workers[i].memory_gibibytes)
           ephemeral_storage_gibibytes = floor(
             worker.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-            - module.resources.k8s_ephemeral_storage_reserve.gibibytes
-            - (worker.resource.platform == local.gb300_platform ? var.gb300_login_pod_worker_reserve.ephemeral_storage_gibibytes : 0)
+            -module.resources.k8s_ephemeral_storage_reserve.gibibytes
           )
           gpus = local.resources.workers[i].gpus
         }
       ]
-      login = local.gb300_enabled ? var.gb300_login_pod_worker_reserve : {
+      login = {
         cpu_cores        = local.resources.login.cpu_cores
         memory_gibibytes = floor(local.resources.login.memory_gibibytes)
         ephemeral_storage_gibibytes = floor(
           var.slurm_nodeset_login.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-          - module.resources.k8s_ephemeral_storage_reserve.gibibytes
+          -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
       accounting = null
@@ -73,7 +62,7 @@ locals {
         size_gibibytes = module.filestore.jail.size_gibibytes
         device         = module.filestore.jail.mount_tag
       }
-      jail_submounts = [for submount in var.filestore_jail_submounts : {
+      jail_submounts = [for submount in local.filestore_jail_submounts : {
         name           = submount.name
         size_gibibytes = module.filestore.jail_submounts[submount.name].size_gibibytes
         device         = module.filestore.jail_submounts[submount.name].mount_tag
@@ -81,43 +70,7 @@ locals {
       }]
       accounting = null
     }
-    nfs = {
-      enabled    = false
-      path       = null
-      host       = null
-      mount_path = null
-    }
-    nfs_in_k8s = {
-      enabled         = false
-      version         = null
-      use_stable_repo = true
-      size_gibibytes  = null
-      storage_class   = null
-      threads         = null
-    }
-    nfs_node_group_enabled            = false
-    exporter_enabled                  = var.slurm_exporter_enabled
-    rest_enabled                      = var.slurm_rest_enabled
-    accounting_enabled                = false
-    telemetry_enabled                 = var.telemetry_enabled
-    public_o11y_enabled               = var.public_o11y_enabled
-    soperator_notifier                = var.soperator_notifier
-    backups_enabled                   = false
-    slurmdbd_config                   = {}
-    slurm_accounting_config           = {}
-    use_default_apparmor_profile      = var.use_default_apparmor_profile
-    worker_sshd_config_map_ref_name   = var.slurm_worker_sshd_config_map_ref_name
-    login_on_worker_nodes             = local.gb300_enabled
-    shared_memory_size_gibibytes      = var.slurm_shared_memory_size_gibibytes
-    slurm_partition_config_type       = var.slurm_partition_config_type
-    slurm_partition_raw_config        = var.slurm_partition_raw_config
-    slurm_health_check_config         = var.slurm_health_check_config
-    slurm_nodesets_partitions = [for partition in var.slurm_nodesets_partitions : {
-      name         = partition.name
-      is_all       = partition.is_all
-      nodeset_refs = partition.slurm_nodeset_refs
-      config       = partition.config
-    }]
+    login_on_worker_nodes = local.gb300_enabled
     worker_nodesets = [for nodeset in local.slurm_nodeset_workers : {
       name            = nodeset.name
       replicas        = nodeset.size
@@ -172,17 +125,12 @@ locals {
     }]
     topology = {
       plugin     = local.gb300_enabled ? "topology/block" : "topology/tree"
-      block_size = local.gb300_enabled ? try(var.slurm_topology_block_size, local.gb300_nodes_per_nodegroup) : null
+      block_size = local.gb300_enabled ? local.gb300_nodes_per_nodegroup : null
     }
-    login_allocation_id              = module.k8s.static_ip_allocation_id
-    login_public_ip                  = var.slurm_login_public_ip
-    tailscale_enabled                = var.tailscale_enabled
-    login_sshd_config_map_ref_name   = var.slurm_login_sshd_config_map_ref_name
-    sssd_conf_secret_ref_name        = var.slurm_sssd_conf_secret_ref_name
-    sssd_ldap_ca_config_map_ref_name = var.slurm_sssd_ldap_ca_config_map_ref_name
-    sssd_enabled                     = var.slurm_sssd_enabled
-    login_ssh_root_public_keys       = var.slurm_login_ssh_root_public_keys
-    flux_namespace                   = local.flux_namespace
+    login_allocation_id        = module.k8s.static_ip_allocation_id
+    login_public_ip            = true
+    login_ssh_root_public_keys = var.slurm_login_ssh_root_public_keys
+    flux_namespace             = local.flux_namespace
   }
 }
 

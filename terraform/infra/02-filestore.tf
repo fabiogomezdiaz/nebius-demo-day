@@ -1,4 +1,5 @@
 # 02-filestore.tf — Jail, controller spool, and /mnt/data filesystems.
+# Sizes live here. Task 1 always creates new filesystems.
 
 module "filestore" {
   source = "git::https://github.com/nebius/nebius-solutions-library.git//soperator/modules/filestore?ref=soperator-v4.1.8-1"
@@ -12,43 +13,37 @@ module "filestore" {
   k8s_cluster_name = local.k8s_cluster_name
 
   controller_spool = {
-    spec = var.filestore_controller_spool.spec != null ? {
+    spec = {
       disk_type            = "NETWORK_SSD"
-      size_gibibytes       = var.filestore_controller_spool.spec.size_gibibytes
-      block_size_kibibytes = var.filestore_controller_spool.spec.block_size_kibibytes
-      forbid_deletion      = var.filestore_controller_spool.spec.forbid_deletion
-    } : null
-    existing = var.filestore_controller_spool.existing != null ? {
-      id = var.filestore_controller_spool.existing.id
-    } : null
+      size_gibibytes       = 128
+      block_size_kibibytes = 4
+      forbid_deletion      = false
+    }
+    existing = null
   }
 
   # Task 1 does not run slurmdbd. No accounting filesystem.
   accounting = null
 
   jail = {
-    spec = var.filestore_jail.spec != null ? {
+    spec = {
       disk_type            = "NETWORK_SSD"
-      size_gibibytes       = var.filestore_jail.spec.size_gibibytes
-      block_size_kibibytes = var.filestore_jail.spec.block_size_kibibytes
-      forbid_deletion      = var.filestore_jail.spec.forbid_deletion
-    } : null
-    existing = var.filestore_jail.existing != null ? {
-      id = var.filestore_jail.existing.id
-    } : null
+      size_gibibytes       = 256
+      block_size_kibibytes = 4
+      forbid_deletion      = false
+    }
+    existing = null
   }
 
-  jail_submounts = [for submount in var.filestore_jail_submounts : {
+  jail_submounts = [for submount in local.filestore_jail_submounts : {
     name = submount.name
-    spec = submount.spec != null ? {
+    spec = {
       disk_type            = "NETWORK_SSD"
-      size_gibibytes       = submount.spec.size_gibibytes
-      block_size_kibibytes = submount.spec.block_size_kibibytes
-      forbid_deletion      = submount.spec.forbid_deletion
-    } : null
-    existing = submount.existing != null ? {
-      id = submount.existing.id
-    } : null
+      size_gibibytes       = submount.size_gibibytes
+      block_size_kibibytes = submount.block_size_kibibytes
+      forbid_deletion      = submount.forbid_deletion
+    }
+    existing = null
   }]
 
   providers = {

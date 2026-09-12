@@ -10,12 +10,21 @@ locals {
     controller = module.resources.by_platform[var.slurm_nodeset_controller.resource.platform][var.slurm_nodeset_controller.resource.preset]
     workers    = [for worker in local.slurm_nodeset_workers : module.resources.by_platform[worker.resource.platform][worker.resource.preset]]
     login      = module.resources.by_platform[var.slurm_nodeset_login.resource.platform][var.slurm_nodeset_login.resource.preset]
-    nfs        = var.slurm_nodeset_nfs != null ? module.resources.by_platform[var.slurm_nodeset_nfs.resource.platform][var.slurm_nodeset_nfs.resource.preset] : null
+    nfs        = null
   }
 
   # keep in sync with helm chart
   # https://github.com/nebius/soperator/blob/main/helm/storageclasses/templates/storageclasses.yaml#L4
   storage_class_prefix = "compute-csi"
+
+  # Hardcoded Task 1 filestore. Always create new; do not attach another jail.
+  filestore_jail_submounts = [{
+    name                 = "data"
+    mount_path           = "/mnt/data"
+    size_gibibytes       = 512
+    block_size_kibibytes = 4
+    forbid_deletion      = false
+  }]
 
   slurm_cluster_name = "soperator"
   flux_namespace     = "flux-system"
@@ -23,16 +32,8 @@ locals {
 
   gb300_platform              = "gpu-gb300"
   gb300_nodes_per_nodegroup   = 18
-  nvl_instance_group_size     = 18
   default_nodes_per_nodegroup = 100
   gb300_enabled               = anytrue([for nodeset in var.slurm_nodeset_workers : nodeset.resource.platform == local.gb300_platform])
-
-  # GB300 keeps slurm_nodeset_login.size non-zero in tfvars so Soperator still
-  # creates login pods, while Terraform skips the separate unused CPU login node
-  # group. Non-GB300 platforms keep the configured login node group behavior.
-  login_node_group = merge(var.slurm_nodeset_login, {
-    node_group_enabled = local.gb300_enabled ? false : var.slurm_nodeset_login.node_group_enabled
-  })
 
   # Normalize user-facing worker nodesets into the internal nodeset list used
   # by both mk8s node groups and Slurm NodeSets. GB300 is rack-addressed, so one
@@ -114,13 +115,6 @@ locals {
       }
     }
   ]])
-
-  # Key by final mk8s node group name so NVLink resources can be created and
-  # looked up with the same identifier.
-  node_group_workers_v2_by_key = {
-    for worker in local.node_group_workers_v2 :
-    worker.node_group_name => worker
-  }
 }
 
 resource "terraform_data" "check_variables" {
