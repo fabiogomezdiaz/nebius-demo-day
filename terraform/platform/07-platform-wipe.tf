@@ -1,7 +1,7 @@
 # Marker created first so it is always in state, even if Soperator apply hangs.
 # Other platform resources depend on it, so terraform destroy uninstalls Helm
 # first and then this script removes Flux keep leftovers, CR finalizers, and
-# namespaces. ./scripts/08-destroy_platform.sh also runs the same script after
+# namespaces. ./scripts/06-destroy_platform.sh also runs the same script after
 # destroy so an empty state still wipes the cluster.
 
 resource "terraform_data" "platform_k8s_wipe" {
