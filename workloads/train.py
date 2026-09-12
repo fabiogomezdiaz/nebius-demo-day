@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """LoRA SFT of Qwen2.5-7B-Instruct.
 
-Designed to be explained in an interview:
-
 - Hugging Face `transformers` loads the base instruct model.
 - `peft.LoraConfig` freezes those weights and trains small adapter matrices.
 - `trl.SFTTrainer` runs supervised fine-tuning on chat `messages`.
-- `torchrun` (started from train.sbatch) gives us DDP across 2 nodes x 1 GPU.
-- Checkpoints are the LoRA adapters only, not a full 14 GB copy of Qwen.
+- `torchrun` (started from train.sbatch) runs DDP across 2 nodes × 1 GPU.
+- Checkpoints are the LoRA adapters only, not a full copy of Qwen.
 """
 
 from __future__ import annotations

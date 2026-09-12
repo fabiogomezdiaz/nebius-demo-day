@@ -112,7 +112,7 @@ def build() -> None:
     prs = Presentation()
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
-    total = 12
+    total = 10
 
     # 1 title
     s = blank(prs)
@@ -134,7 +134,7 @@ def build() -> None:
     p3 = tf.add_paragraph()
     p3.space_before = Pt(16)
     r3 = p3.add_run()
-    set_run(r3, "Distributed LoRA fine-tune  →  vLLM on the same MK8s cluster  →  base vs trained compare", size=16, color=MUTED)
+    set_run(r3, "Distributed LoRA fine-tune on Soperator — 2×H100 over Ethernet", size=16, color=MUTED)
     p4 = tf.add_paragraph()
     p4.space_before = Pt(28)
     r4 = p4.add_run()
@@ -144,15 +144,10 @@ def build() -> None:
     # 2 agenda
     s = blank(prs)
     title_block(s, "Demo objectives")
-    card(s, 0.5, 1.4, 6.0, 2.4, "Stage 1 — cluster and training", [
+    card(s, 0.5, 1.4, 12.3, 2.4, "Task 1 — cluster and training", [
         "Deploy Soperator from the pinned tag, not main.",
-        "Run distributed training / fine-tuning.",
+        "Run distributed LoRA fine-tuning on two Ethernet H100s.",
         "Overlay Terraform so 1×H100 nodes work without InfiniBand.",
-    ])
-    card(s, 6.8, 1.4, 6.0, 2.4, "Stages 2–4 — serve, compare, utilize", [
-        "Serve the trained model on the same k8s cluster.",
-        "Run the original model and compare.",
-        "Keep more than 80% of the GPUs busy.",
     ])
     card(s, 0.5, 4.05, 12.3, 2.5, "Hard limits", [
         "2×H100 total, 1 GPU per node. Single MK8s cluster.",
@@ -164,12 +159,11 @@ def build() -> None:
 
     # 3 translator slide
     s = blank(prs)
-    title_block(s, "GPU Operator, vLLM, and Soperator")
+    title_block(s, "GPU Operator and Soperator")
     bullets(s, [
         "GPU Operator makes nvidia.com/gpu real on Kubernetes. Soperator makes Slurm real on Kubernetes.",
         "One MK8s cluster. Jobs are submitted with sbatch on the login node, not as GPU Deployments.",
         "The jail is a shared root filesystem. Python is installed once; both H100 workers see the same env and /mnt/data.",
-        "vLLM is unchanged. It runs inside a Slurm allocation, because worker pods already own the GPUs.",
         "Fine-tune = continue training a pretrained model on domain examples. LoRA = train small adapters, not all 7B weights.",
         "Distributed = two processes (one GPU each) averaging gradients. NCCL does that; here it must use Ethernet, not IB.",
     ], size=17)
@@ -195,7 +189,6 @@ def build() -> None:
         "No IB NIC, no GPU cluster object.",
         "NCCL over TCP (eth0).",
         "Training uses both cards.",
-        "Then 1 GPU base + 1 GPU LoRA serve.",
     ])
     card(s, 8.9, 1.35, 3.9, 5.1, "Storage", [
         "New jail filesystem (256 GiB).",
@@ -231,57 +224,22 @@ def build() -> None:
         "Launch: sbatch train.sbatch → srun torchrun --nnodes 2 --nproc_per_node 1.",
         "NCCL_IB_DISABLE=1, NCCL_NET=Socket, NCCL_SOCKET_IFNAME=eth0.",
         "Checkpoint: /mnt/data/nebius-demo/checkpoints/helios-lora (adapters only).",
-        "Why 7B not 1.5B: large enough to load the H100s for task 4; small enough to finish in the lab.",
+        "Why 7B not 1.5B: large enough to load the H100s; small enough to finish in the lab.",
         "Pass signal: squeue on 2 nodes, world_size=2 in the log, adapters on disk, both GPUs busy.",
     ], size=16)
     add_footer(s, prs, 6, total)
 
-    # 7 task 2-3
+    # 7 demo flow
     s = blank(prs)
-    title_block(s, "Tasks 2 and 3 — serve and compare")
-    card(s, 0.5, 1.4, 6.0, 5.1, "Task 2  ·  vLLM on Slurm", [
-        "serve_ft.sbatch: 1 GPU, port 8001.",
-        "--enable-lora --lora-modules helios=...",
-        "Same OpenAI /v1/chat/completions API.",
-        "Do not kubectl apply a GPU Deployment.",
-        "Worker pods already hold nvidia.com/gpu.",
-        "Tunnel via login node for a workstation curl.",
-    ])
-    card(s, 6.8, 1.4, 6.0, 5.1, "Task 3  ·  A/B on two GPUs", [
-        "serve_base.sbatch: original Qwen on port 8000.",
-        "compare.py sends identical prompts to both.",
-        "In-domain: CEO, cooling loop, HX-441.",
-        "Control: capital of France (both should work).",
-        "Headline is qualitative, not a leaderboard.",
-        "Save outputs/comparison.md as the comparison artifact.",
-    ])
-    add_footer(s, prs, 7, total)
-
-    # 8 task 4
-    s = blank(prs)
-    title_block(s, "Task 4 — more than 80% of the GPUs")
+    title_block(s, "Live demo flow")
     bullets(s, [
-        "There are only two GPUs. Using both is 100% of capacity. Also push SM util on each card above 80%.",
-        "During training: seq 2048, per-device batch 4, grad accum 4, packing on. Tiny batches will not fill an H100.",
-        "Evidence: Nebius console GPU dashboards + nvidia-smi dmon on both workers.",
-        "After training: base server on GPU 0, fine-tuned server on GPU 1, loadgen.py for concurrent traffic.",
-        "Talking point: no NVLink domain across nodes and no IB — DDP still works, just over Ethernet.",
-    ], size=17)
-    add_footer(s, prs, 8, total)
-
-    # 9 demo flow
-    s = blank(prs)
-    title_block(s, "Live demo flow (about 8 minutes)")
-    bullets(s, [
-        "1 min  Constraints + gpu_cluster = null in tfvars.",
-        "1 min  kubectl get nodes and sinfo. Two GPU workers.",
-        "2 min  Training log (world_size=2) and LoRA checkpoint.",
-        "2 min  Curl the fine-tuned model: Who is the CEO of Helios Robotics?",
-        "1 min  comparison.md — in-domain hit + Paris still works.",
-        "1 min  GPU dashboard screenshot from the training run.",
+        "Constraints + gpu_cluster sentinel in tfvars.",
+        "kubectl get nodes and sinfo. Two GPU workers.",
+        "Training log (world_size=2) and LoRA checkpoint.",
+        "GPU dashboard screenshot from the training run.",
         "Leave the cluster up. Do not terraform destroy.",
     ], size=17)
-    add_footer(s, prs, 9, total)
+    add_footer(s, prs, 7, total)
 
     # 10 design decisions
     s = blank(prs)
@@ -295,7 +253,7 @@ def build() -> None:
         "New jail + /mnt/data — a jail filesystem must not be shared across two clusters.",
         "If we had 8×H100 + IB: restore infiniband_fabric, 8gpu preset, drop NCCL_IB_DISABLE, nproc_per_node=8.",
     ], size=16)
-    add_footer(s, prs, 10, total)
+    add_footer(s, prs, 8, total)
 
     # 11 troubleshoot
     s = blank(prs)
@@ -307,10 +265,9 @@ def build() -> None:
         "yq: command not found — install yq on the machine running Terraform.",
         "Public o11y / missing telemetry profile — public_o11y_enabled still true.",
         "NCCL hang at init — IB not disabled or wrong NCCL_SOCKET_IFNAME (run ip -br addr).",
-        "vLLM Pending as a Deployment — expected; run it via sbatch.",
         "OOM — lower PER_DEVICE_BATCH; 7B LoRA on 80 GB should otherwise be comfortable.",
     ], size=16)
-    add_footer(s, prs, 11, total)
+    add_footer(s, prs, 9, total)
 
     # 12 close
     s = blank(prs)
@@ -319,10 +276,10 @@ def build() -> None:
         "Sandbox console + Slack invites, if they are not in yet.",
         "Confirm region has gpu-h100-sxm (docs: eu-north1).",
         "SSH public key into terraform.tfvars, then bootstrap + apply.",
-        "Task 1 is the pass. Tasks 2–4 are the extra mile and fit on the same two GPUs.",
+        "Task 1 is the pass: two-node LoRA SFT on Soperator.",
         "Repo: docs, Terraform overlay, workloads, and this deck.",
     ], size=18)
-    add_footer(s, prs, 12, total)
+    add_footer(s, prs, 10, total)
 
     prs.save(OUT)
     print(f"wrote {OUT}")

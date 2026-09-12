@@ -24,7 +24,6 @@ python -m pip install \
   "accelerate==1.6.0" \
   "peft==0.15.2" \
   "trl==0.16.1" \
-  "vllm==0.8.5" \
   "huggingface_hub==0.30.2" \
   "sentencepiece" \
   "protobuf"
