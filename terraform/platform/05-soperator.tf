@@ -56,15 +56,15 @@ module "slurm" {
 
   # --- Partitioning, health checks, & resources ---
   resources                   = local.s.resources
-  slurm_accounting_config     = local.s.slurm_accounting_config
+  slurm_accounting_config     = {}
   slurm_health_check_config   = local.s.slurm_health_check_config
   slurm_nodesets_partitions   = local.s.slurm_nodesets_partitions
   slurm_partition_config_type = local.s.slurm_partition_config_type
   slurm_partition_raw_config  = local.s.slurm_partition_raw_config
-  slurmdbd_config            = local.s.slurmdbd_config
+  slurmdbd_config             = {}
 
   # --- Monitoring, reporting, and integrations ---
-  accounting_enabled     = local.s.accounting_enabled
+  accounting_enabled     = false
   active_checks_scope    = local.s.active_checks_scope
   exporter_enabled       = local.s.exporter_enabled
   public_o11y_enabled    = local.s.public_o11y_enabled

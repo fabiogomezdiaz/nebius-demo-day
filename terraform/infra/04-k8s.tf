@@ -17,7 +17,6 @@ module "k8s" {
   depends_on = [
     module.filestore,
     module.cleanup,
-    terraform_data.check_slurm_nodeset_accounting,
     terraform_data.check_slurm_nodeset,
   ]
 
@@ -45,8 +44,8 @@ module "k8s" {
   ]
   node_group_login = local.login_node_group
   node_group_accounting = {
-    enabled = var.accounting_enabled
-    spec    = var.slurm_nodeset_accounting
+    enabled = false
+    spec    = null
   }
   node_group_nfs = {
     enabled = false
@@ -66,10 +65,7 @@ module "k8s" {
       id        = submount.id
       mount_tag = submount.mount_tag
     }]
-    accounting = var.accounting_enabled ? {
-      id        = try(module.filestore.accounting.id, null)
-      mount_tag = try(module.filestore.accounting.mount_tag, null)
-    } : null
+    accounting = null
   }
 
   node_ssh_access_users = var.k8s_cluster_node_ssh_access_users

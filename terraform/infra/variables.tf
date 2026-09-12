@@ -243,33 +243,6 @@ variable "filestore_jail_submounts" {
   }
 }
 
-variable "filestore_accounting" {
-  description = "Shared filesystem to be used for accounting DB"
-  type = object({
-    existing = optional(object({
-      id = string
-    }))
-    spec = optional(object({
-      size_gibibytes       = number
-      block_size_kibibytes = number
-      forbid_deletion      = optional(bool, false)
-    }))
-  })
-  default  = null
-  nullable = true
-
-  validation {
-    condition = (var.filestore_accounting != null
-      ? (
-        (var.filestore_accounting.existing != null && var.filestore_accounting.spec == null) ||
-        (var.filestore_accounting.existing == null && var.filestore_accounting.spec != null)
-      )
-      : true
-    )
-    error_message = "One of `existing` or `spec` must be provided."
-  }
-}
-
 # endregion Storage
 
 # region nfs-server
@@ -992,48 +965,6 @@ variable "gb300_login_pod_worker_reserve" {
   }
 }
 
-variable "slurm_nodeset_accounting" {
-  description = "Configuration of Slurm Accounting node set."
-  type = object({
-    resource = object({
-      platform = string
-      preset   = string
-    })
-    boot_disk = object({
-      type                 = string
-      size_gibibytes       = number
-      block_size_kibibytes = number
-    })
-  })
-  default = {
-    resource = {
-      platform = "cpu-d3"
-      preset   = "8vcpu-32gb"
-    }
-    boot_disk = {
-      type                 = "NETWORK_SSD"
-      size_gibibytes       = 128
-      block_size_kibibytes = 4
-    }
-  }
-  validation {
-    condition     = var.slurm_nodeset_accounting.boot_disk.size_gibibytes >= 128
-    error_message = "Boot disks for accounting nodes must be at least 128 GiB."
-  }
-}
-
-resource "terraform_data" "check_slurm_nodeset_accounting" {
-  lifecycle {
-    precondition {
-      condition = (var.accounting_enabled
-        ? var.slurm_nodeset_accounting != null
-        : true
-      )
-      error_message = "Accounting node set must be provided when accounting is enabled."
-    }
-  }
-}
-
 variable "slurm_nodeset_nfs" {
   description = "Configuration of NFS node set."
   type = object({
@@ -1283,55 +1214,7 @@ variable "soperator_notifier" {
 
 # endregion Telemetry
 
-# region Accounting
-
-variable "accounting_enabled" {
-  description = "Whether to enable accounting."
-  type        = bool
-  default     = false
-}
-
-variable "slurmdbd_config" {
-  description = "Slurmdbd.conf configuration. See https://slurm.schedmd.com/slurmdbd.conf.html.Not all options are supported."
-  type        = map(any)
-  default = {
-    # archiveEvents : "yes"
-    # archiveJobs : "yes"
-    # archiveSteps : "yes"
-    # archiveSuspend : "yes"
-    # archiveResv : "yes"
-    # archiveUsage : "yes"
-    # archiveTXN : "yes"
-    # debugLevel : "info"
-    # tcpTimeout : 120
-    # purgeEventAfter : "1month"
-    # purgeJobAfter : "1month"
-    # purgeStepAfter : "1month"
-    # purgeSuspendAfter : "12month"
-    # purgeResvAfter : "1month"
-    # purgeUsageAfter : "1month"
-    # debugFlags : "DB_ARCHIVE"
-  }
-}
-
-variable "slurm_accounting_config" {
-  description = "Slurm.conf accounting configuration. See https://slurm.schedmd.com/slurm.conf.html. Not all options are supported."
-  type        = map(any)
-  default = {
-    # accountingStorageTRES: "gres/gpu,license/iop1"
-    # accountingStoreFlags: "job_comment,job_env,job_extra,job_script,no_stdio"
-    # acctGatherInterconnectType: "acct_gather_interconnect/ofed"
-    # acctGatherFilesystemType: "acct_gather_filesystem/lustre"
-    # jobAcctGatherType: "jobacct_gather/cgroup"
-    # jobAcctGatherFrequency: 30
-    # priorityWeightAge: 1
-    # priorityWeightFairshare: 1
-    # priorityWeightQOS: 1
-    # priorityWeightTRES: 1
-  }
-}
-
-# endregion Accounting
+# Accounting (slurmdbd) is hardcoded off. Task 1 does not need it.
 
 # region Backups
 

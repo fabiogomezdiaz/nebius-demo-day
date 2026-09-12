@@ -73,7 +73,7 @@ slurm_partition_config_type = "default"
 #----------------------------------------------------------------------------------------------------------------------#
 # Nodesets — CPU: system 4×8 + login 16 + controller 4 = 6 nodes / 52 vCPU.
 # GPU workers are extra: 2 x 1xH100, no InfiniBand.
-# NFS and Slurm accounting are off. Demo I/O is filestore jail + /mnt/data.
+# NFS is off. Slurm accounting is hardcoded off. Demo I/O is filestore jail + /mnt/data.
 #----------------------------------------------------------------------------------------------------------------------#
 
 slurm_nodeset_system = {
@@ -194,8 +194,6 @@ soperator_notifier = {
 
 # Assignment / known recipe issue.
 public_o11y_enabled = false
-
-accounting_enabled = false
 
 backups_enabled             = "force_disable"
 backups_password            = "password"

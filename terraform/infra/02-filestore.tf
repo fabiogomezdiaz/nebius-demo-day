@@ -23,17 +23,8 @@ module "filestore" {
     } : null
   }
 
-  accounting = var.accounting_enabled && var.filestore_accounting != null ? {
-    spec = try(var.filestore_accounting.spec, null) != null ? {
-      disk_type            = "NETWORK_SSD"
-      size_gibibytes       = var.filestore_accounting.spec.size_gibibytes
-      block_size_kibibytes = var.filestore_accounting.spec.block_size_kibibytes
-      forbid_deletion      = var.filestore_accounting.spec.forbid_deletion
-    } : null
-    existing = try(var.filestore_accounting.existing, null) != null ? {
-      id = var.filestore_accounting.existing.id
-    } : null
-  } : null
+  # Task 1 does not run slurmdbd. No accounting filesystem.
+  accounting = null
 
   jail = {
     spec = var.filestore_jail.spec != null ? {

@@ -61,15 +61,8 @@ locals {
           - module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
-      accounting = var.accounting_enabled ? {
-        cpu_cores        = local.resources.accounting.cpu_cores
-        memory_gibibytes = floor(local.resources.accounting.memory_gibibytes)
-        ephemeral_storage_gibibytes = floor(
-          var.slurm_nodeset_accounting.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
-          - module.resources.k8s_ephemeral_storage_reserve.gibibytes
-        )
-      } : null
-      nfs = null
+      accounting = null
+      nfs        = null
     }
     filestores = {
       controller_spool = {
@@ -86,10 +79,7 @@ locals {
         device         = module.filestore.jail_submounts[submount.name].mount_tag
         mount_path     = submount.mount_path
       }]
-      accounting = var.accounting_enabled ? {
-        size_gibibytes = try(module.filestore.accounting.size_gibibytes, null)
-        device         = try(module.filestore.accounting.mount_tag, null)
-      } : null
+      accounting = null
     }
     nfs = {
       enabled    = false
@@ -108,13 +98,13 @@ locals {
     nfs_node_group_enabled            = false
     exporter_enabled                  = var.slurm_exporter_enabled
     rest_enabled                      = var.slurm_rest_enabled
-    accounting_enabled                = var.accounting_enabled
+    accounting_enabled                = false
     telemetry_enabled                 = var.telemetry_enabled
     public_o11y_enabled               = var.public_o11y_enabled
     soperator_notifier                = var.soperator_notifier
     backups_enabled                   = false
-    slurmdbd_config                   = var.slurmdbd_config
-    slurm_accounting_config           = var.slurm_accounting_config
+    slurmdbd_config                   = {}
+    slurm_accounting_config           = {}
     use_default_apparmor_profile      = var.use_default_apparmor_profile
     worker_sshd_config_map_ref_name   = var.slurm_worker_sshd_config_map_ref_name
     login_on_worker_nodes             = local.gb300_enabled

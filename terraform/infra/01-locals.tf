@@ -10,7 +10,6 @@ locals {
     controller = module.resources.by_platform[var.slurm_nodeset_controller.resource.platform][var.slurm_nodeset_controller.resource.preset]
     workers    = [for worker in local.slurm_nodeset_workers : module.resources.by_platform[worker.resource.platform][worker.resource.preset]]
     login      = module.resources.by_platform[var.slurm_nodeset_login.resource.platform][var.slurm_nodeset_login.resource.preset]
-    accounting = var.slurm_nodeset_accounting != null ? module.resources.by_platform[var.slurm_nodeset_accounting.resource.platform][var.slurm_nodeset_accounting.resource.preset] : null
     nfs        = var.slurm_nodeset_nfs != null ? module.resources.by_platform[var.slurm_nodeset_nfs.resource.platform][var.slurm_nodeset_nfs.resource.preset] : null
   }
 
@@ -127,7 +126,6 @@ locals {
 resource "terraform_data" "check_variables" {
   depends_on = [
     terraform_data.check_slurm_nodeset,
-    terraform_data.check_slurm_nodeset_accounting,
     terraform_data.check_local_nvme,
   ]
 }
