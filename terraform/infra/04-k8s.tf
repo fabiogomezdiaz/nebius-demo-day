@@ -14,7 +14,7 @@ module "k8s" {
   login_public_ip = true
 
   k8s_version                  = "1.35"
-  name                         = local.k8s_cluster_name
+  name                         = local.k8s_cluster_name_prefix
   company_name                 = var.company_name
   platform_driver_presets      = { gpu-h100-sxm = "cuda13.0" }
   use_preinstalled_gpu_drivers = true

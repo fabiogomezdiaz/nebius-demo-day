@@ -10,7 +10,7 @@ module "filestore" {
 
   iam_project_id = data.nebius_iam_v1_project.this.id
 
-  k8s_cluster_name = local.k8s_cluster_name
+  k8s_cluster_name = local.k8s_cluster_name_prefix
 
   controller_spool = {
     spec = {

@@ -26,9 +26,9 @@ locals {
     forbid_deletion      = false
   }]
 
-  slurm_cluster_name = "soperator"
-  flux_namespace     = "flux-system"
-  k8s_cluster_name   = format("soperator-%s", var.company_name)
+  slurm_cluster_name      = "soperator"
+  flux_namespace          = "flux-system"
+  k8s_cluster_name_prefix = format("soperator-%s", var.company_name)
 
   gb300_platform              = "gpu-gb300"
   gb300_nodes_per_nodegroup   = 18
