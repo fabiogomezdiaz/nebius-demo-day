@@ -64,7 +64,7 @@ Overlays that exist because this is **not** the stock 8-GPU InfiniBand recipe:
 | **Flux** | Soperator’s installer. The Slurm module publishes HelmReleases into `flux-system`. |
 | **Soperator** | Turns a `SlurmCluster` CR into login / controller / worker pods. Workers **hold** `nvidia.com/gpu`. |
 | **GPU Operator** | Exposes `nvidia.com/gpu`. Drivers are already on the node image, so `driver.enabled=false`. No Network Operator (no InfiniBand). |
-| **Flux overlay** (`08-soperator-flux-overlay.tf`) | Sets `runAfterCreation: false` on activechecks that never get a status write on this Ethernet 1-GPU lab, so Terraform does not wait 240 minutes. |
+| **Flux overlay** (`04-soperator-flux-overlay.tf`) | Sets `runAfterCreation: false` on activechecks that never get a status write on this Ethernet 1-GPU lab, so Terraform does not wait 240 minutes. |
 
 GPU ownership after platform is Ready: both H100s are bound to Soperator worker pods. A Kubernetes GPU pod would stay `Pending`. Training must go through Slurm.
 

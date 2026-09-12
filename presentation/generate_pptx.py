@@ -275,7 +275,7 @@ def build() -> None:
     bullets(s, [
         "Sandbox console + Slack invites, if they are not in yet.",
         "Confirm region has gpu-h100-sxm (docs: eu-north1).",
-        "SSH public key into terraform.tfvars, then bootstrap + apply.",
+        "SSH public key path in terraform.tfvars, then bootstrap + apply.",
         "Task 1 is the pass: two-node LoRA SFT on Soperator.",
         "Repo: docs, Terraform overlay, workloads, and this deck.",
     ], size=18)

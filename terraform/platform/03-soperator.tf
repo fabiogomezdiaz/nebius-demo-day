@@ -2,7 +2,7 @@
 # Public o11y (Nebius-hosted telemetry) and Slurm backups are off for this lab;
 # those modules are not instantiated.
 # The module wait for soperator-activechecks is unconditional (240m). See
-# 08-soperator-flux-overlay.tf — that patches Flux values so the install hook
+# 04-soperator-flux-overlay.tf — that patches Flux values so the install hook
 # does not block on Slurm jobs that never get a status write here.
 
 module "slurm" {
@@ -54,10 +54,12 @@ module "slurm" {
   nfs_node_group_enabled = false
 
   # --- Security & access ---
-  login_allocation_id              = local.s.login_allocation_id
-  login_on_worker_nodes            = local.s.login_on_worker_nodes
-  login_public_ip                  = local.s.login_public_ip
-  login_ssh_root_public_keys       = var.slurm_login_ssh_root_public_keys
+  login_allocation_id   = local.s.login_allocation_id
+  login_on_worker_nodes = local.s.login_on_worker_nodes
+  login_public_ip       = local.s.login_public_ip
+  login_ssh_root_public_keys = [
+    chomp(file(pathexpand(var.slurm_login_ssh_root_public_key_path))),
+  ]
   login_sshd_config_map_ref_name   = ""
   sssd_conf_secret_ref_name        = ""
   sssd_ldap_ca_config_map_ref_name = ""

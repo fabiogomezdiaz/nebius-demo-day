@@ -32,7 +32,7 @@ From the repository root, after `nebius profile create`:
 ./scripts/01-seed_tfvars.sh
 ```
 
-Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key and kubeconfig path into `terraform/platform/terraform.tfvars` (and workloads). Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
+Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key **path** and kubeconfig path into `terraform/platform/terraform.tfvars` (and workloads). Terraform reads the `.pub` file at apply. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
 
 ## Apply infrastructure
 

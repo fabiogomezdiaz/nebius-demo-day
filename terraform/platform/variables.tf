@@ -3,8 +3,8 @@ variable "kubeconfig_path" {
   type        = string
 }
 
-variable "slurm_login_ssh_root_public_keys" {
-  description = "Authorized keys accepted for connecting to Slurm login nodes via SSH as 'root' user."
-  type        = list(string)
+variable "slurm_login_ssh_root_public_key_path" {
+  description = "Path to an SSH public key authorized as root on Slurm login nodes. ~ is expanded."
+  type        = string
   nullable    = false
 }

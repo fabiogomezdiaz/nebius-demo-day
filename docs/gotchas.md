@@ -50,7 +50,7 @@ On this lab that write never arrives during bootstrap:
 4. After `POWER_UP` + slurmd restart, nodes went idle. Health jobs `test-controller-is-ready` and `ensure-healthy-nodes` **COMPLETED** (hostname / JSON check — not training).
 5. The Helm hook still waited: `ensure-healthy-nodes.status.slurmJobsStatus.lastRunStatus` stayed null because `soperator-checks` was error-looping on CronJob creates.
 
-**Fix:** `terraform/platform/08-soperator-flux-overlay.tf` patches Flux ConfigMap `soperator-fluxcd-values` (the module creates it **empty** and `ignore_changes` it) to set those two checks `runAfterCreation: false`. CronJobs remain for later manual runs.
+**Fix:** `terraform/platform/04-soperator-flux-overlay.tf` patches Flux ConfigMap `soperator-fluxcd-values` (the module creates it **empty** and `ignore_changes` it) to set those two checks `runAfterCreation: false`. CronJobs remain for later manual runs.
 
 **Do not** `depends_on = [module.slurm]`. The 240m wait is *inside* the module. The overlay must run in parallel, depending only on Flux + the wipe marker.
 
@@ -80,7 +80,7 @@ Soperator installs the operator and `SlurmCluster` as Flux HelmReleases. Removin
 
 Flux HelmReleases use `helm.sh/resource-policy: keep`. `terraform destroy` in platform uninstalls the Helm release object and leaves namespaces, CRDs, and finalizers. Destroy **workloads → platform → infra** so wipe still has a cluster.
 
-`06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker (`07-platform-wipe.tf`) is created **first** so it is always in state even if Soperator apply hangs.
+`06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker in `cleanup.tf` is created **first** so it is always in state even if Soperator apply hangs.
 
 ## Soperator workers own both GPUs
 

@@ -21,7 +21,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Local tfvars with secrets. The committed overlay is terraform.tfvars (placeholder SSH key only).
+# Local tfvars with secrets. The committed overlay is terraform.tfvars (SSH key path, not the key).
 *.tfvars.local
 *.auto.tfvars
 *.auto.tfvars.json

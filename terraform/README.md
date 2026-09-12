@@ -37,6 +37,20 @@ Destroy **workloads → platform → infra** so Kubernetes cleanup runs while th
 | `05-kubeconfig.tf` | Writes `terraform/kubeconfig` |
 | `cleanup.tf` | Leftover `pvc-*` disks on infra destroy |
 
+## platform files
+
+| File | Concern |
+| --- | --- |
+| `versions.tf` | Terraform and provider version pins |
+| `providers.tf` | Kubernetes / Helm via local kubeconfig |
+| `variables.tf` | Kubeconfig and SSH public key paths |
+| `remote-state.tf` | Infra outputs (`soperator` object) |
+| `01-fluxcd.tf` | Flux — Soperator's installer |
+| `02-gpu-operator.tf` | NVIDIA GPU Operator (`driver.enabled=false`) |
+| `03-soperator.tf` | Soperator / Slurm |
+| `04-soperator-flux-overlay.tf` | Skip bootstrap activechecks that hang this lab |
+| `cleanup.tf` | Destroy-time login/Kruise hooks and Flux leftover wipe |
+
 ## Apply
 
 ```bash

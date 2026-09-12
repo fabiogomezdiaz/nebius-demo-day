@@ -44,8 +44,7 @@ if [[ ! -f "${SSH_PUBKEY_PATH}" ]]; then
   echo "Set SSH_PUBKEY_PATH to your .pub file." >&2
   exit 1
 fi
-SSH_PUBKEY="$(tr -d '\r\n' < "${SSH_PUBKEY_PATH}")"
-if [[ -z "${SSH_PUBKEY}" ]]; then
+if [[ ! -s "${SSH_PUBKEY_PATH}" ]]; then
   echo "Empty SSH public key: ${SSH_PUBKEY_PATH}" >&2
   exit 1
 fi
@@ -95,20 +94,19 @@ set_tfvars_string "${INFRA}/terraform.tfvars" iam_project_id "${NEBIUS_PROJECT_I
 set_tfvars_string "${INFRA}/terraform.tfvars" vpc_subnet_id "${NEBIUS_VPC_SUBNET_ID}"
 
 tfvars_tmp="$(mktemp)"
-awk -v pubkey="${SSH_PUBKEY}" '
-  /^slurm_login_ssh_root_public_keys/ {
-    print "slurm_login_ssh_root_public_keys = ["
-    print "  \"" pubkey "\","
-    print "]"
+awk '
+  /^slurm_login_ssh_root_public_keys[[:space:]]*=/ {
+    if ($0 ~ /\]/) next
     skip = 1
     next
   }
-  skip && /^\]/ { skip = 0; next }
+  skip && /\]/ { skip = 0; next }
   skip { next }
   { print }
 ' "${PLATFORM}/terraform.tfvars" > "${tfvars_tmp}"
 mv "${tfvars_tmp}" "${PLATFORM}/terraform.tfvars"
 
+set_tfvars_string "${PLATFORM}/terraform.tfvars" slurm_login_ssh_root_public_key_path "${SSH_PUBKEY_PATH}"
 set_tfvars_string "${PLATFORM}/terraform.tfvars" kubeconfig_path "${KUBECONFIG_REL}"
 
 if [[ -f "${WORKLOADS}/versions.tf" ]]; then
@@ -124,7 +122,7 @@ echo "  region=${NEBIUS_REGION}"
 echo "  iam_tenant_id=${NEBIUS_TENANT_ID}"
 echo "  iam_project_id=${NEBIUS_PROJECT_ID}"
 echo "  vpc_subnet_id=${NEBIUS_VPC_SUBNET_ID}"
-echo "Seeded SSH public key from ${SSH_PUBKEY_PATH} into ${PLATFORM}/terraform.tfvars"
+echo "Seeded SSH public key path ${SSH_PUBKEY_PATH} into ${PLATFORM}/terraform.tfvars"
 echo "Seeded kubeconfig_path=${KUBECONFIG_REL}"
 echo
 echo "Next: ./scripts/02-apply_infra.sh"
