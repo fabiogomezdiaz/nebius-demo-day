@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Copy workloads/ onto the Slurm login node under /mnt/data.
+# SSH to the Slurm login node (sshd in the login pod, via LoadBalancer).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KEY="${1:-${SSH_PRIVATE_KEY:-${HOME}/.ssh/id_rsa}}"
 LOGIN_HOST="${2:-}"
+USER="${SSH_USER:-root}"
 
 if [[ ! -f "${KEY}" ]]; then
   echo "Missing SSH private key: ${KEY}" >&2
@@ -17,9 +18,4 @@ if [[ -z "${LOGIN_HOST}" ]]; then
   LOGIN_HOST="$("${ROOT}/scripts/login_host.sh")"
 fi
 
-echo "Syncing workloads to root@${LOGIN_HOST}:/mnt/data/nebius-demo"
-ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "root@${LOGIN_HOST}" "mkdir -p /mnt/data/nebius-demo"
-rsync -az -e "ssh -i ${KEY}" \
-  "${ROOT}/workloads/" "root@${LOGIN_HOST}:/mnt/data/nebius-demo/workloads/"
-echo "Done. SSH in with: ./scripts/05-login.sh"
-echo "Then: bash /mnt/data/nebius-demo/workloads/setup_env.sh"
+exec ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "${USER}@${LOGIN_HOST}"
