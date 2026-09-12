@@ -8,6 +8,6 @@ data "terraform_remote_state" "infra" {
 }
 
 locals {
-  infra = data.terraform_remote_state.infra.outputs
-  s     = local.infra.soperator
+  infra     = data.terraform_remote_state.infra.outputs
+  soperator = local.infra.soperator
 }

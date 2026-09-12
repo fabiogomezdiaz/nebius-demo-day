@@ -11,14 +11,14 @@ module "slurm" {
   source = "git::https://github.com/nebius/nebius-solutions-library.git//soperator/modules/slurm?ref=soperator-v4.1.8-1"
 
   # --- Basic identities & cluster ---
-  cluster_name        = local.s.cluster_name
+  cluster_name        = local.soperator.cluster_name
   flux_namespace      = "flux-system"
-  iam_project_id      = local.s.iam_project_id
-  iam_tenant_id       = local.s.iam_tenant_id
+  iam_project_id      = local.soperator.iam_project_id
+  iam_tenant_id       = local.soperator.iam_tenant_id
   k8s_cluster_context = local.infra.k8s_cluster_context
   k8s_cluster_id      = local.infra.k8s_cluster_id
   name                = "soperator"
-  region              = local.s.region
+  region              = local.soperator.region
 
   # --- Operator versions & maintenance ---
   maintenance                    = "none"
@@ -27,16 +27,16 @@ module "slurm" {
   operator_version               = "4.1.8"
 
   # --- Worker/nodegroup/node configuration ---
-  cuda_version                 = local.s.cuda_version
-  node_count                   = local.s.node_count
+  cuda_version                 = local.soperator.cuda_version
+  node_count                   = local.soperator.node_count
   shared_memory_size_gibibytes = 64
-  topology                     = local.s.topology
-  use_preinstalled_gpu_drivers = local.s.use_preinstalled_gpu_drivers
-  worker_nodesets              = local.s.worker_nodesets
+  topology                     = local.soperator.topology
+  use_preinstalled_gpu_drivers = local.soperator.use_preinstalled_gpu_drivers
+  worker_nodesets              = local.soperator.worker_nodesets
 
   # --- Storage & filesystems ---
   controller_state_on_filestore = false
-  filestores                    = local.s.filestores
+  filestores                    = local.soperator.filestores
   nfs = {
     enabled    = false
     path       = null
@@ -54,9 +54,9 @@ module "slurm" {
   nfs_node_group_enabled = false
 
   # --- Security & access ---
-  login_allocation_id   = local.s.login_allocation_id
-  login_on_worker_nodes = local.s.login_on_worker_nodes
-  login_public_ip       = local.s.login_public_ip
+  login_allocation_id   = local.soperator.login_allocation_id
+  login_on_worker_nodes = local.soperator.login_on_worker_nodes
+  login_public_ip       = local.soperator.login_public_ip
   login_ssh_root_public_keys = [
     chomp(file(pathexpand(var.slurm_login_ssh_root_public_key_path))),
   ]
@@ -69,7 +69,7 @@ module "slurm" {
   worker_sshd_config_map_ref_name  = ""
 
   # --- Partitioning, health checks, & resources ---
-  resources                 = local.s.resources
+  resources                 = local.soperator.resources
   slurm_accounting_config   = {}
   slurm_health_check_config = null
   slurm_nodesets_partitions = [
