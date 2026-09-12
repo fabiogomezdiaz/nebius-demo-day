@@ -1,0 +1,21 @@
+{
+  "architecture": {
+    "title": "Nebius Demo Day — Task 1 compact",
+    "fileId": "I4wdFNgdsHcbQn0oumUc",
+    "diagramId": "z62t59f-LiZq5ubZeN0E",
+    "diagramType": "freeform-diagram",
+    "fileUrl": "https://app.eraser.io/workspace/I4wdFNgdsHcbQn0oumUc",
+    "diagramUrl": "https://app.eraser.io/workspace/I4wdFNgdsHcbQn0oumUc?diagram=z62t59f-LiZq5ubZeN0E&layout=canvas",
+    "png": "../static/task-1-architecture.png"
+  },
+  "training_flow": {
+    "title": "Nebius Demo Day — Task 1 training flow",
+    "fileId": "sMTFzEg0NEXUxYUbYetV",
+    "diagramId": "1ZG1AC1pKv2-lFeKximp",
+    "diagramType": "sequence-diagram",
+    "fileUrl": "https://app.eraser.io/workspace/sMTFzEg0NEXUxYUbYetV",
+    "diagramUrl": "https://app.eraser.io/workspace/sMTFzEg0NEXUxYUbYetV?diagram=1ZG1AC1pKv2-lFeKximp&layout=canvas",
+    "png": "../static/task-1-training-flow.png",
+    "source": "task-1-training-flow.eraser"
+  }
+}

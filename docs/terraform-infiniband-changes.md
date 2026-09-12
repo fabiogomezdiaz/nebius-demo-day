@@ -2,6 +2,8 @@
 
 Pinned release: **`soperator-v4.1.8-1`** (operator version `4.1.8`). Do not use `main`.
 
+Catalog of everything that broke and why: [gotchas.md](gotchas.md).
+
 The stock recipe is in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library/tree/soperator-v4.1.8-1/soperator). This repository does not fork or vendor the modules. `terraform init` fetches them with `git::` at that tag.
 
 Three Terraform projects:
@@ -53,7 +55,7 @@ In the recipe (`soperator/modules/k8s/k8s_ng_workers_v2.tf`):
 
 Explain this if asked why the controller CrashLoop’d, or why the overlay is not “just tfvars.”
 
-Slurm GRES (Generic RESource) is how `slurmctld` learns GPUs: device file, type, and which CPU IDs may use them. Soperator writes `gres.conf` from Terraform `worker_nodesets[].gres_config`.
+**GRES** is Slurm’s **Generic RESource** map. Kubernetes learns GPUs from the device plugin (`nvidia.com/gpu`). Slurm does not: `slurmctld` only believes `gres.conf` — device file, GPU type, and which CPU IDs may use that GPU. Soperator writes that file from Terraform `worker_nodesets[].gres_config`. A map that lists more cores or `/dev/nvidiaN` files than the node has is fatal.
 
 The solutions library looks up GRES by **platform** (`gpu-h100-sxm`), not by **preset**. That map is the 8-GPU NVLink node:
 

@@ -2,6 +2,9 @@
 
 Fine-tune `Qwen/Qwen2.5-7B-Instruct` with LoRA across **2 nodes × 1×H100**, using Ethernet NCCL. InfiniBand is not available on this GPU preset.
 
+Stack diagrams: [architecture-task-1.md](architecture-task-1.md).  
+Gotchas from this lab: [gotchas.md](gotchas.md).
+
 ## Model and method
 
 | Choice | Reason |
@@ -47,11 +50,9 @@ nebius iam whoami
 
 MK8s creation takes several tens of minutes. This apply does **not** install Soperator.
 
-Install Flux, Soperator/Slurm, GPU Operator, ArgoCD, and Training Operator with `scripts/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
+Install Flux, Soperator/Slurm, and GPU Operator with `scripts/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
 
-If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. Infra must emit the 1-GPU GRES overlay, then re-apply platform. See [GRES](terraform-infiniband-changes.md#gres-gresconf).
-
-Optional Ethernet NCCL MPIJob: [Operators, ArgoCD, and NCCL](05-gitops-operators-nccl.md). Restore Slurm GPU workers before `sbatch`.
+If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. **GRES** (Generic RESource) is Slurm’s config for which GPU devices and CPU cores exist; the stock map assumes 8 GPUs / 32 cores. Infra must emit the 1-GPU overlay, then re-apply platform. See [GRES](terraform-infiniband-changes.md#gres-gresconf).
 
 SSH helper after the workloads apply (included in script 03): `terraform/workloads/login.sh -k <ssh-private-key>`.
 
@@ -75,7 +76,7 @@ sinfo
 From the operator workstation, after SSH works:
 
 ```bash
-./scripts/05-sync_workloads.sh <ssh-private-key>
+./scripts/04-sync_workloads.sh <ssh-private-key>
 ```
 
 On the login node:
