@@ -4,8 +4,10 @@ Deploy [Soperator](https://github.com/nebius/soperator) from the official [solut
 
 **Pinned recipe:** [`soperator-v4.1.8-1`](https://github.com/nebius/nebius-solutions-library/releases/tag/soperator-v4.1.8-1) (not `main`).
 
+Assignment brief: [docs/00-assignment.md](docs/00-assignment.md).  
+Status (done vs missing): [docs/00-status.md](docs/00-status.md).  
 Glossary: [docs/00-glossary.md](docs/00-glossary.md).  
-Task 1 gotchas (GRES — Slurm’s GPU device map — `gpu_cluster`, activechecks hang, GPU jobs that never place): [docs/01-task-1-gotchas.md](docs/01-task-1-gotchas.md).
+Task 1 gotchas: [docs/01-task-1-gotchas.md](docs/01-task-1-gotchas.md).
 
 ## Scope
 
@@ -58,13 +60,13 @@ InfiniBand Terraform notes: [docs/terraform-infiniband-changes.md](docs/terrafor
 - Single-GPU H100 preset **does not support InfiniBand**
 - `public_o11y_enabled = false`
 - Do not share one filesystem between two jails
-- CPU nodesets sized to **6 nodes / 52 vCPU** (see tfvars)
+- CPU nodesets sized to **6 nodes / 52 vCPU** in this lab (assignment table is 8 nodes / 64 vCPU including Accounting + NFS — those two are off; see [00-status.md](docs/00-status.md))
 - Retain the environment for the duration of the demo
 
 ## Repository layout
 
 ```
-docs/            # glossary, runbooks, architecture, walkthrough
+docs/            # assignment, status, glossary, runbooks, architecture
 gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 scripts/         # 00 prereqs → 04 sync → 05 login → 06–07 destroy

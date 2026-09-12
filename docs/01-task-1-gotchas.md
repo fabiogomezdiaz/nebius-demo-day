@@ -2,6 +2,18 @@
 
 Things that bit this lab while putting Soperator `4.1.8` on **2×1×H100 Ethernet** (preset `1gpu-16vcpu-200gb`) and running two-node LoRA SFT. The stock recipe assumes **8×H100 + InfiniBand**.
 
+## TL;DR
+
+- Pin **`soperator-v4.1.8-1`**. Do not use `main`.
+- `gpu_cluster.id = "ethernet-not-attached"`. Empty fabric, `null`, and a real IB fabric all fail on this preset. No Network Operator.
+- GRES is keyed by **platform**, not preset. Stock `Cores=0-31` CrashLoops `slurmctld`. `Cores=0-15` lets it start but GPU jobs sit `PD (Resources)` on idle nodes. Use **`Cores=0-7`**.
+- Training is **`sbatch`**, not a K8s GPU Deployment. Request `--gpus-per-node=1`. A job without GRES can still run with `cuda=False`.
+- Force NCCL onto Ethernet (`NCCL_IB_DISABLE=1`). Bind rendezvous to **`eth0`**, not `hostname -I` (that can be docker0).
+- Hidden ActiveChecks run as user **`soperato`**. `scancel -u soperator` fails.
+- Platform apply hangs 240 minutes unless the Flux overlay turns off bootstrap activechecks. Destroy is **platform → infra**, then wipe (Helm `keep`).
+- Success (training): `world_size=2`, `cuda=True`, `n_gpu=1` per rank, adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`.
+- Still open vs the assignment: inference + serve, base vs LoRA compare, >80% GPU, Accounting/NFS nodes. See [00-status.md](00-status.md).
+
 Terraform overlay detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md). Runbook: [01-task-1-soperator-training.md](01-task-1-soperator-training.md).
 
 ## Pin the recipe
@@ -173,9 +185,9 @@ A filestore that is already a jail for another Slurm cluster must not be attache
 | `production` | `true` | `false` | Sandbox is not Soperator Pro; avoids IAM merge-request validation |
 | `public_o11y_enabled` | `true` | `false` | Recipe expects a `soperator-telemetry` profile this project does not have |
 | `slurm_shared_memory_size_gibibytes` | `1024` | `64` | Worker RAM is 200 GiB, not 1600 GiB |
-| Accounting / NFS / backups | on | off (accounting hardcoded) | Not needed; demo I/O is jail + `/mnt/data` |
+| Accounting / NFS / backups | on | off (accounting hardcoded) | Jail + `/mnt/data` is enough to train. The assignment CPU table still lists Accounting + NFS (8+4 vCPU); those nodes were never created. See [00-status.md](00-status.md). |
 | `node_local_image_disk` | 930 GiB | disabled | Enroot/Docker image disks unused |
-| System / login / controller size | large | 4+1+1 = 52 vCPU | Capacity table |
+| System / login / controller size | large | 4+1+1 = 52 vCPU | Assignment table is 8 nodes / 64 vCPU |
 
 `yq` must be on `PATH` during apply (`00-install_prereqs.sh`). Region for `gpu-h100-sxm` is documented as `eu-north1`.
 

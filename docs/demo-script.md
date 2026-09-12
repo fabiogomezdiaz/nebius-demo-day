@@ -5,7 +5,7 @@ Retain the live cluster for the session. Do not destroy it beforehand.
 ## Narrative
 
 1. **Constraints**  
-   Two H100s, one GPU per node, no InfiniBand, one MK8s cluster, CPU nodesets sized to 52 vCPU. The stock Soperator recipe assumes an InfiniBand GPU cluster. This overlay uses `1gpu-16vcpu-200gb` and does not attach InfiniBand.
+   Two H100s, one GPU per node, no InfiniBand, one MK8s cluster. CPU nodesets in this lab are 52 vCPU (6 nodes). The assignment table is 64 vCPU (8 nodes) including Accounting + NFS, which we did not create.
 
 2. **Cluster**  
    Overlay snippet, `kubectl get nodes`, `sinfo`. Two GPU workers Idle or Allocated.

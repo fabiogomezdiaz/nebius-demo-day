@@ -1,6 +1,6 @@
 # Workloads
 
-These scripts run **inside the Slurm jail** on the login node, after `scripts/04-sync_workloads.sh`.
+These scripts run **inside the Slurm jail** on the login node, after `scripts/04-sync_workloads.sh`. Training is done (job 66). Inference / base-vs-LoRA compare are **not** in this folder yet — [00-status.md](../docs/00-status.md).
 
 | File | Role |
 | --- | --- |

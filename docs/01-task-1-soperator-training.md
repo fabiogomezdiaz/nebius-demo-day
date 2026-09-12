@@ -2,6 +2,8 @@
 
 Fine-tune `Qwen/Qwen2.5-7B-Instruct` with LoRA across **2 nodes × 1×H100**, using Ethernet NCCL. InfiniBand is not available on this GPU preset.
 
+This is **task 1** (distributed training on Soperator). Assignment: [00-assignment.md](00-assignment.md). What is done vs still missing (inference, compare, 80% GPU, Accounting/NFS nodes): [00-status.md](00-status.md).
+
 Stack diagrams: [architecture-task-1.md](architecture-task-1.md).  
 Gotchas from this lab: [01-task-1-gotchas.md](01-task-1-gotchas.md).
 

@@ -102,14 +102,19 @@ On 8×H100 you would drop this override and use the stock 8-device map (and Infi
 
 ## CPU nodeset budget
 
-| Nodeset | Platform | Preset | Count | vCPU |
-| --- | --- | --- | --- | --- |
-| System | cpu-d3 | 8vcpu-32gb | 4 (fixed) | 32 |
-| Login | cpu-d3 | 16vcpu-64gb | 1 | 16 |
-| Controller | cpu-d3 | 4vcpu-16gb | 1 | 4 |
-| **CPU total** | | | **6** | **52** |
+The assignment table is **8 CPU nodes / 64 vCPU** (includes Accounting + NFS). This lab is **6 / 52** because those two node groups are disabled. GPU workers are extra either way.
 
-GPU workers are additional: 2 × `1gpu-16vcpu-200gb` (2 H100s, 32 vCPU). They are not in the 52 vCPU table.
+| Nodeset | Platform | Preset | Count | vCPU | This lab |
+| --- | --- | --- | --- | --- | --- |
+| System | cpu-d3 | 8vcpu-32gb | 4 (fixed) | 32 | yes |
+| Login | cpu-d3 | 16vcpu-64gb | 1 | 16 | yes |
+| Controller | cpu-d3 | 4vcpu-16gb | 1 | 4 | yes |
+| Accounting | cpu-d3 | 8vcpu-32gb | 1 | 8 | **off** |
+| NFS | cpu-d3 | 4vcpu-16gb | 1 | 4 | **off** |
+| **CPU total (assignment)** | | | **8** | **64** | |
+| **CPU total (this lab)** | | | **6** | **52** | |
+
+GPU workers are additional: 2 × `1gpu-16vcpu-200gb` (2 H100s, 32 vCPU). They are not in the 64 vCPU table. See [00-status.md](00-status.md).
 
 ## Region
 
