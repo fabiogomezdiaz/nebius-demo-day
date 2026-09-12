@@ -1,6 +1,16 @@
 # 04-outputs.tf — Values platform needs to install Soperator/Flux.
 
 locals {
+  # gres.conf Cores= is logical cores on a complete socket, not CPU thread IDs.
+  # 1gpu-16vcpu-200gb is S:C:T=1:8:2; Cores=0-15 is invalid and drops gres/gpu from CfgTRES.
+  worker_cpu_topo = module.resources.cpu_topology_by_platform[local.worker.resource.platform][local.worker.resource.preset]
+  worker_gres_last_core = (
+    local.worker_cpu_topo.boards
+    * local.worker_cpu_topo.sockets_per_board
+    * local.worker_cpu_topo.cores_per_socket
+    -1
+  )
+
   soperator = {
     region                       = var.region
     iam_tenant_id                = var.iam_tenant_id
@@ -76,15 +86,15 @@ locals {
         provider::string-functions::snake_case(local.worker.resource.platform),
         provider::string-functions::snake_case(local.worker.boot_disk.type),
       ]
-      cpu_topology = module.resources.cpu_topology_by_platform[local.worker.resource.platform][local.worker.resource.preset]
+      cpu_topology = local.worker_cpu_topo
       gres_name    = lookup(module.resources.gres_name_by_platform, local.worker.resource.platform, null)
       # Stock gres_config_by_platform is the 8-GPU SKU (Cores=0-31 / 32-63).
-      # 1gpu-16vcpu-200gb has 16 CPUs and /dev/nvidia0; slurmctld fatals otherwise.
+      # 1gpu-16vcpu-200gb has 16 CPUs and /dev/nvidia0; slurmctld fatals on Cores=0-31.
       gres_config = [
         format(
           "AutoDetect=off Name=gpu Type=%s File=/dev/nvidia0 Cores=0-%d Links=-1 Flags=nvidia_gpu_env",
           lookup(module.resources.gres_name_by_platform, local.worker.resource.platform, "gpu"),
-          module.resources.cpu_topology_by_platform[local.worker.resource.platform][local.worker.resource.preset].cpus - 1,
+          local.worker_gres_last_core,
         )
       ]
       create_partition = false
