@@ -2,14 +2,13 @@
 
 Task 1 stack diagrams (infra / platform / workloads): [architecture-task-1.md](architecture-task-1.md).
 
-Soperator is Slurm-on-Kubernetes. Cloud resources (MK8s, node groups, filestore) come from the official [solutions library](https://github.com/nebius/nebius-solutions-library) recipe in `terraform/infra`. Operators (Flux, Soperator, NVIDIA GPU Operator) live in `terraform/platform`. The login helper lives in `terraform/workloads`. Platform and workloads authenticate with a local `terraform/kubeconfig` (not stored in Vault). Training is a Slurm job.
+Soperator is Slurm-on-Kubernetes. Cloud resources (MK8s, node groups, filestore) come from the official [solutions library](https://github.com/nebius/nebius-solutions-library) recipe in `terraform/infra`. Operators (Flux, Soperator, NVIDIA GPU Operator) live in `terraform/platform`. SSH and file sync are shell scripts in `scripts/`. Platform authenticates with a local `terraform/kubeconfig` (not stored in Vault). Training is a Slurm job.
 
 ```mermaid
 flowchart TB
   subgraph workstation [Operator workstation]
     TF[infra Terraform]
     PL[platform Terraform]
-    WL[workloads Terraform]
     SSH[SSH login / sbatch]
   end
 

@@ -1,21 +1,21 @@
-# Task 1 architecture — three Terraform stacks
+# Task 1 architecture — two Terraform stacks
 
 Task 1 is **2-node LoRA SFT** of `Qwen2.5-7B-Instruct` on Soperator. Training is a Slurm job (`sbatch`), not a Kubernetes GPU Deployment. InfiniBand is not used (`1gpu-16vcpu-200gb` cannot join a GPU cluster).
 
 Gotchas from standing this up: [gotchas.md](gotchas.md).
 
-Three applies, in order. Each stack owns a different layer.
+Two applies, in order. Each stack owns a different layer.
 
 ![Task 1 architecture — MK8s node columns with platform and workload pods](static/task-1-architecture.png)
 
-**How to read it.** Infra is filestore + MK8s. The four system workers are one column (`system 0-3`) with Flux, Soperator, and GPU Operator stacked. `kube-system` is omitted — that is MK8s control-plane, not something we install. The purple **PLATFORM** overlay spans `controller-0` … `worker-1`. The orange **WORKLOADS** overlay spans `login-0` + `worker-0` + `worker-1`. Jail CSI mounts on the Slurm nodes; `/mnt/data` on login + GPU workers; controller spool on `controller-0` only. `controller-0` is Slurm’s scheduler, not a Kubernetes master.
+**How to read it.** Infra is filestore + MK8s. The four system workers are one column (`system 0-3`) with Flux, Soperator, and GPU Operator stacked. `kube-system` is omitted — that is MK8s control-plane, not something we install. The purple **PLATFORM** overlay spans `controller-0` … `worker-1`. The orange **WORKLOADS** overlay spans `login-0` + `worker-0` + `worker-1`. Jail CSI mounts on the Slurm pods (`slurmctld`, `sshd`, `slurmd`); `/mnt/data` on `05-login.sh` / `torchrun`; controller spool on `slurmctld` only. `controller-0` is Slurm’s scheduler, not a Kubernetes master.
 
 | Node | Kubernetes | Slurm | Platform on that node | Workloads on that node |
 | --- | --- | --- | --- | --- |
 | *(not pictured)* control plane | **Master** | — | — | — |
 | system 0-3 | Worker | — | Flux, Soperator operator, GPU Operator | — |
 | controller-0 | Worker | **Controller** (`slurmctld`) | `slurmctld` | — |
-| login-0 | Worker | **Login** (submit) | `sshd` | `login.sh` / `sbatch` |
+| login-0 | Worker | **Login** (submit) | `sshd` | `05-login.sh` / `sbatch` |
 | worker-0 / worker-1 | Worker | **Compute** (`slurmd`) | `slurmd` + `nvidia.com/gpu` | `torchrun` LoRA |
 
 Source / Eraser IDs: [diagrams/](diagrams/).
@@ -24,9 +24,9 @@ Source / Eraser IDs: [diagrams/](diagrams/).
 | --- | --- | --- | --- |
 | **Infra** | `02-apply_infra.sh` | `terraform/infra` | Nebius cloud only: MK8s, node groups, filestore. No Helm. |
 | **Platform** | `03-apply_platform.sh` | `terraform/platform` | Operators on that cluster: Flux, Soperator/Slurm, GPU Operator. |
-| **Workloads** | same `03`, then `04-sync` | `terraform/workloads` + `workloads/` | SSH helper, then files on the jail so `sbatch` can run. |
+| **Workloads** | `04-sync` then `05-login` | `workloads/` | Files on the jail so `sbatch` can run. |
 
-Platform and workloads authenticate with the **local kubeconfig** infra writes (`terraform/kubeconfig`, gitignored). They read infra outputs via **local remote state**.
+Platform authenticates with the **local kubeconfig** infra writes (`terraform/kubeconfig`, gitignored). It reads infra outputs via **local remote state**.
 
 ---
 
@@ -72,12 +72,12 @@ GPU ownership after platform is Ready: both H100s are bound to Soperator worker 
 
 ## Workloads — how Task 1 actually runs
 
-The workloads Terraform apply is **not** the training job. It only writes `login.sh`. The job files get onto the jail with `04-sync_workloads.sh`, then you `sbatch` over SSH. The orange **WORKLOADS** band in the diagram is this path.
+Training is not a Terraform apply. `04-sync_workloads.sh` copies job files onto the jail; `05-login.sh` SSHes to the login LoadBalancer. Then you `sbatch`. The orange **WORKLOADS** band in the diagram is this path.
 
 | Piece | Role in Task 1 |
 | --- | --- |
-| `login.sh` | SSH to the login LoadBalancer using the key from tfvars. |
 | `04-sync_workloads.sh` | Copies local `workloads/` onto `/mnt/data/nebius-demo/workloads/`. |
+| `05-login.sh` | SSH to the login LoadBalancer (`soperator-login-svc`). |
 | `setup_env.sh` | Creates a shared venv on the jail so both ranks see the same Python. |
 | `train.sbatch` / `train.py` | The actual Task 1 job. |
 
@@ -103,4 +103,4 @@ Success looks like `world_size=2`, decreasing loss, and adapter files on the sha
 
 ## End-to-end
 
-Scripts for this path: `00` prereqs → `01` seed → `02` infra → `03` platform+workloads TF → `login.sh` / `sinfo` → `04-sync` → `setup_env.sh` → `sbatch train.sbatch`.
+Scripts for this path: `00` prereqs → `01` seed → `02` infra → `03` platform → `04-sync` → `05-login` / `sinfo` → `setup_env.sh` → `sbatch train.sbatch`.

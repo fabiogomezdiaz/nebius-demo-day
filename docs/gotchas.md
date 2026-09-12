@@ -78,7 +78,7 @@ Soperator installs the operator and `SlurmCluster` as Flux HelmReleases. Removin
 
 ## Helm `keep` means Terraform destroy is not enough
 
-Flux HelmReleases use `helm.sh/resource-policy: keep`. `terraform destroy` in platform uninstalls the Helm release object and leaves namespaces, CRDs, and finalizers. Destroy **workloads → platform → infra** so wipe still has a cluster.
+Flux HelmReleases use `helm.sh/resource-policy: keep`. `terraform destroy` in platform uninstalls the Helm release object and leaves namespaces, CRDs, and finalizers. Destroy **platform → infra** so wipe still has a cluster.
 
 `06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker in `cleanup.tf` is created **first** so it is always in state even if Soperator apply hangs.
 
@@ -90,7 +90,7 @@ Do not scale workers to 0 unless you are deliberately giving the GPUs to somethi
 
 ## Training files are not in Terraform
 
-`03-apply_platform.sh` only writes `login.sh`. `train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
+`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. SSH with `05-login.sh`. Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
 
 ## NCCL must be forced onto Ethernet
 

@@ -41,9 +41,9 @@ flowchart LR
 1. `./scripts/00-install_prereqs.sh` (Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils; skips tools already on PATH).
 2. `./scripts/01-seed_tfvars.sh` — tenant/project/region/subnet and SSH public key path into `terraform.tfvars`.
 3. `./scripts/02-apply_infra.sh` — `terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
-4. `./scripts/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator) then workloads (`login.sh`).
-5. `terraform/workloads/login.sh -k <ssh-private-key>` then `sinfo`.
-6. `./scripts/04-sync_workloads.sh <ssh-private-key> <login-ip>`.
+4. `./scripts/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator).
+5. `./scripts/04-sync_workloads.sh`
+6. `./scripts/05-login.sh` then `sinfo`.
 7. On login: `bash /mnt/data/nebius-demo/workloads/setup_env.sh`.
 8. `sbatch /mnt/data/nebius-demo/workloads/train.sbatch`.
 9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`, both GPUs busy.
@@ -66,8 +66,8 @@ InfiniBand Terraform notes: [docs/terraform-infiniband-changes.md](docs/terrafor
 ```
 docs/            # glossary, runbooks, architecture, walkthrough
 gitops/          # notes; operators are Terraform in terraform/platform
-terraform/       # infra (cloud) + platform (operators) + workloads (login.sh)
-scripts/         # 00 prereqs → 04 sync → 05–07 destroy
+terraform/       # infra (cloud) + platform (operators)
+scripts/         # 00 prereqs → 04 sync → 05 login → 06–07 destroy
 workloads/       # train.sbatch / train.py / setup_env.sh
 presentation/    # PowerPoint source + generated deck
 ```
@@ -85,4 +85,4 @@ Terraform overlay: `terraform/infra/terraform.tfvars`.
 
 ## License
 
-MIT. Soperator module bodies stay in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library) and are fetched at tag `soperator-v4.1.8-1`. This repository keeps an infra cloud stack, a platform operator stack (including Soperator/Flux), and a workloads login helper. Kubeconfig is local (`terraform/kubeconfig`), not Vault.
+MIT. Soperator module bodies stay in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library) and are fetched at tag `soperator-v4.1.8-1`. This repository keeps an infra cloud stack and a platform operator stack (including Soperator/Flux). Kubeconfig is local (`terraform/kubeconfig`), not Vault.

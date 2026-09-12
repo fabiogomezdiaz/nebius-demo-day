@@ -12,7 +12,7 @@ w0 [label: "worker-0 (1xH100)", icon: cpu, color: orange]
 w1 [label: "worker-1 (1xH100)", icon: cpu, color: orange]
 data [label: "/mnt/data filestore", icon: hard-drive, color: gray]
 
-ws > login: SSH via login.sh
+ws > login: SSH via 05-login.sh
 activate login
 ws > data: 04-sync rsyncs workloads/ to /mnt/data/nebius-demo
 login > data: setup_env.sh creates shared venv

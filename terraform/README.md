@@ -1,12 +1,11 @@
 # Terraform projects
 
-Three applies, in order. Projects live **flat** under `terraform/`. Kubernetes/Helm in the last two use a **local kubeconfig** at `terraform/kubeconfig` (gitignored, not Vault). The infra stack writes that file via `nebius mk8s cluster get-credentials`.
+Two applies, in order. Projects live **flat** under `terraform/`. Kubernetes/Helm in platform use a **local kubeconfig** at `terraform/kubeconfig` (gitignored, not Vault). The infra stack writes that file via `nebius mk8s cluster get-credentials`.
 
 State is **local** (`terraform/infra/terraform.tfstate`, gitignored). The Nebius provider authenticates with your CLI IAM token (`nebius iam get-access-token`). There is no Terraform service account or Object Storage backend.
 
 1. **`terraform/infra/`** — Nebius cloud only: MK8s, GPU/CPU node groups, filestore. No Helm/Kubernetes providers.
 2. **`terraform/platform/`** — Cluster operators: Flux (Soperator's installer), Soperator/Slurm, NVIDIA GPU Operator.
-3. **`terraform/workloads/`** — `login.sh` SSH helper.
 
 Soperator modules are fetched from GitHub at `soperator-v4.1.8-1`.
 
@@ -16,10 +15,9 @@ Soperator modules are fetched from GitHub at `soperator-v4.1.8-1`.
 
 **Backups:** jail backups are `force_disable`. The backup operator/bucket modules are not applied.
 
-Destroy **workloads → platform → infra** so Kubernetes cleanup runs while the cluster still exists. `06-destroy_platform.sh` runs `terraform destroy` and then `terraform/platform/scripts/platform_k8s_wipe.sh`, because Helm `resource-policy: keep` leaves Flux HelmReleases, namespaces, and CR finalizers that Terraform does not delete. Infra (MK8s, filestore) stays until you run `07`. Each destroy script prints a plan and waits for `yes` (no `-auto-approve`):
+Destroy **platform → infra** so Kubernetes cleanup runs while the cluster still exists. `06-destroy_platform.sh` runs `terraform destroy` and then `terraform/platform/scripts/platform_k8s_wipe.sh`, because Helm `resource-policy: keep` leaves Flux HelmReleases, namespaces, and CR finalizers that Terraform does not delete. Infra (MK8s, filestore) stays until you run `07`. Each destroy script prints a plan and waits for `yes` (no `-auto-approve`):
 
 ```bash
-./scripts/05-destroy_workloads.sh
 ./scripts/06-destroy_platform.sh
 ./scripts/07-destroy_infra.sh
 ```
@@ -56,9 +54,9 @@ Destroy **workloads → platform → infra** so Kubernetes cleanup runs while th
 ```bash
 ./scripts/01-seed_tfvars.sh
 ./scripts/02-apply_infra.sh                 # cluster + kubeconfig
-./scripts/03-apply_platform.sh              # platform (includes Soperator) + login.sh
+./scripts/03-apply_platform.sh              # Flux, Soperator, GPU Operator
 ```
 
-SSH helper after workloads apply: `terraform/workloads/login.sh -k <ssh-private-key>`.
+SSH after platform apply: `./scripts/05-login.sh`. Sync job files with `./scripts/04-sync_workloads.sh`. Both default to `~/.ssh/id_rsa`.
 
 InfiniBand skip: [docs/terraform-infiniband-changes.md](../docs/terraform-infiniband-changes.md).

@@ -6,13 +6,12 @@ Catalog of everything that broke and why: [gotchas.md](gotchas.md).
 
 The stock recipe is in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library/tree/soperator-v4.1.8-1/soperator). This repository does not fork or vendor the modules. `terraform init` fetches them with `git::` at that tag.
 
-Three Terraform projects:
+Two Terraform projects:
 
 | Project | Role |
 | --- | --- |
 | `terraform/infra` | Cloud overlay and tfvars (MK8s, disks, node groups) |
 | `terraform/platform` | Soperator/Flux and other cluster operators |
-| `terraform/workloads` | CRs and `login.sh` |
 
 ## InfiniBand and the 1-GPU preset
 

@@ -32,7 +32,7 @@ From the repository root, after `nebius profile create`:
 ./scripts/01-seed_tfvars.sh
 ```
 
-Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key **path** and kubeconfig path into `terraform/platform/terraform.tfvars` (and workloads). Terraform reads the `.pub` file at apply. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
+Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key **path** and kubeconfig path into `terraform/platform/terraform.tfvars`. Terraform reads the `.pub` file at apply. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
 
 ## Apply infrastructure
 
@@ -46,8 +46,6 @@ Install Flux, Soperator/Slurm, and GPU Operator with `scripts/03-apply_platform.
 
 If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. **GRES** (Generic RESource) is Slurm’s config for which GPU devices and CPU cores exist; the stock map assumes 8 GPUs / 32 cores. Infra must emit the 1-GPU overlay, then re-apply platform. See [GRES](terraform-infiniband-changes.md#gres-gresconf).
 
-SSH helper after the workloads apply (included in script 03): `terraform/workloads/login.sh -k <ssh-private-key>`.
-
 ```bash
 export KUBECONFIG="$PWD/terraform/kubeconfig"
 kubectl config use-context nebius-<company_name>-slurm   # company_name from terraform.tfvars
@@ -56,22 +54,15 @@ kubectl get pods -A
 kubectl get slurmcluster -A
 ```
 
-Workers are ready when Slurm workers are `Idle`:
+## Sync workloads onto the jail
 
 ```bash
-./terraform/workloads/login.sh -k <ssh-private-key>
+./scripts/04-sync_workloads.sh
+./scripts/05-login.sh
 sinfo
 ```
 
-## Sync workloads onto the jail
-
-From the operator workstation, after SSH works:
-
-```bash
-./scripts/04-sync_workloads.sh <ssh-private-key>
-```
-
-On the login node:
+Workers are ready when Slurm workers are `Idle`. Then on the login node:
 
 ```bash
 cd /mnt/data/nebius-demo
