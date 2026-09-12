@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Apply terraform/platform: Flux (Soperator installer), Soperator/Slurm,
-# NVIDIA GPU Operator, Training Operator, ArgoCD.
-# Then apply terraform/workloads (login.sh, ConfigMap; MPIJob stays off).
+# NVIDIA GPU Operator. Then apply terraform/workloads (login.sh).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -35,7 +34,7 @@ apply_stack() {
   terraform apply "$@"
 }
 
-echo "Applying platform (Flux + Soperator + GPU Operator + Training Operator + ArgoCD)..."
+echo "Applying platform (Flux + Soperator + GPU Operator)..."
 cd "${CLUSTER}"
 set +u
 # shellcheck disable=SC1091
@@ -45,7 +44,7 @@ set -u
 apply_stack "${PLATFORM}"
 
 if [[ -f "${WORKLOADS}/versions.tf" ]]; then
-  echo "Applying workloads (login.sh + namespaces + ConfigMap; MPIJob off until GPUs are freed)..."
+  echo "Applying workloads (login.sh)..."
   apply_stack "${WORKLOADS}"
 else
   echo "Skipping terraform/workloads (stack not in this checkout)."
@@ -53,17 +52,6 @@ fi
 
 cd "${ROOT}"
 
-if kubectl --kubeconfig "${KUBECONFIG}" --request-timeout=15s -n argocd get deploy argo-cd-argocd-server >/dev/null 2>&1; then
-  echo "Waiting for ArgoCD server..."
-  kubectl --kubeconfig "${KUBECONFIG}" -n argocd rollout status deploy/argo-cd-argocd-server --timeout=180s
-else
-  echo "ArgoCD deploy not present; skip wait."
-fi
-
 echo
-echo "ArgoCD UI:  kubectl --kubeconfig ${KUBECONFIG} -n argocd port-forward svc/argo-cd-argocd-server 8080:80"
-echo "Password:   kubectl --kubeconfig ${KUBECONFIG} -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-echo "Then open http://127.0.0.1:8080  (user admin)"
-echo
-echo "NCCL MPIJob: ./scripts/04-scale_slurm_gpu_workers.sh 0"
-echo "  then terraform apply -var=enable_nccl_mpijob=true in terraform/workloads"
+echo "SSH: terraform/workloads/login.sh -k <ssh-private-key>"
+echo "Then: ./scripts/04-sync_workloads.sh <ssh-private-key> [login-host]"

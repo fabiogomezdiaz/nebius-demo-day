@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Destroy terraform/platform (Flux, Soperator, GPU Operator, Training Operator, ArgoCD).
+# Destroy terraform/platform (Flux, Soperator, GPU Operator).
 # Terraform helm uninstall leaves Flux HelmReleases (helm.sh/resource-policy: keep).
 # After terraform destroy, this script wipes those leftovers on the live cluster.
 # Does not destroy MK8s/filestore. Run after workloads; infra is optional after this.
@@ -52,4 +52,4 @@ export K8S_CLUSTER_CONTEXT="${K8S_CLUSTER_CONTEXT:-$(kubectl --kubeconfig "${KUB
 echo
 echo "Platform Kubernetes is gone. MK8s/filestore are still up."
 echo "Reinstall: ./scripts/03-apply_platform.sh"
-echo "Or destroy infra: ./scripts/09-destroy_infra.sh"
+echo "Or destroy infra: ./scripts/07-destroy_infra.sh"
