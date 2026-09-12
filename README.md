@@ -39,8 +39,8 @@ flowchart LR
 ## Runbook
 
 1. `./scripts/00-install_prereqs.sh` (Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils; skips tools already on PATH).
-2. `./scripts/01-seed_envrc.sh` — tenant/project from the Nebius CLI profile (lab defaults if unset) into `.envrc`, SSH public key from `~/.ssh/id_rsa.pub` into `terraform.tfvars`.
-3. `./scripts/02-apply_infra.sh` — `source .envrc && terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
+2. `./scripts/01-seed_tfvars.sh` — tenant/project/region/subnet and SSH public key into `terraform.tfvars`.
+3. `./scripts/02-apply_infra.sh` — `terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
 4. `./scripts/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator) then workloads (`login.sh`).
 5. `terraform/workloads/login.sh -k <ssh-private-key>` then `sinfo`.
 6. `./scripts/04-sync_workloads.sh <ssh-private-key> <login-ip>`.

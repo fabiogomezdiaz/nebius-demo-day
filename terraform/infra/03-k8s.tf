@@ -1,4 +1,4 @@
-# 04-k8s.tf — MK8s control plane and node groups.
+# 03-k8s.tf — MK8s control plane and node groups.
 
 locals {
   node_group_system = {

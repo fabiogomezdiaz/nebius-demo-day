@@ -1,4 +1,10 @@
 variable "kubeconfig_path" {
-  description = "Local kubeconfig path (TF_VAR_kubeconfig_path). Written by infra 06-kubeconfig.tf."
+  description = "Local kubeconfig path. Written by infra 05-kubeconfig.tf."
   type        = string
+}
+
+variable "slurm_login_ssh_root_public_keys" {
+  description = "Authorized keys accepted for connecting to Slurm login nodes via SSH as 'root' user."
+  type        = list(string)
+  nullable    = false
 }

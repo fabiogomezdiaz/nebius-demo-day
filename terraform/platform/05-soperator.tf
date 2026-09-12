@@ -12,12 +12,12 @@ module "slurm" {
 
   # --- Basic identities & cluster ---
   cluster_name        = local.s.cluster_name
-  flux_namespace      = local.s.flux_namespace
+  flux_namespace      = "flux-system"
   iam_project_id      = local.s.iam_project_id
   iam_tenant_id       = local.s.iam_tenant_id
   k8s_cluster_context = local.infra.k8s_cluster_context
   k8s_cluster_id      = local.infra.k8s_cluster_id
-  name                = local.s.name
+  name                = "soperator"
   region              = local.s.region
 
   # --- Operator versions & maintenance ---
@@ -57,7 +57,7 @@ module "slurm" {
   login_allocation_id              = local.s.login_allocation_id
   login_on_worker_nodes            = local.s.login_on_worker_nodes
   login_public_ip                  = local.s.login_public_ip
-  login_ssh_root_public_keys       = local.s.login_ssh_root_public_keys
+  login_ssh_root_public_keys       = var.slurm_login_ssh_root_public_keys
   login_sshd_config_map_ref_name   = ""
   sssd_conf_secret_ref_name        = ""
   sssd_ldap_ca_config_map_ref_name = ""

@@ -73,7 +73,7 @@ fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
 
 `controller-0` CrashLoopBackOff; workers sit at `Init:3/4` pinging a DOWN controller.
 
-Infra overlay in `terraform/infra/05-outputs.tf`: when the preset reports `gpus == 1`, replace the stock list with:
+Infra overlay in `terraform/infra/04-outputs.tf`: when the preset reports `gpus == 1`, replace the stock list with:
 
 ```text
 AutoDetect=off Name=gpu Type=nvidia_h100_80gb_hbm3 File=/dev/nvidia0 Cores=0-15 Links=-1 Flags=nvidia_gpu_env

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tiny retry helper used by terraform/infra/envrc.example.
+# Tiny retry helper used by seed and apply scripts.
 set -euo pipefail
 
 retries=5

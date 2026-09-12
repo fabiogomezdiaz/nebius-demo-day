@@ -1,4 +1,4 @@
-# 05-outputs.tf — Values platform needs to install Soperator/Flux.
+# 04-outputs.tf — Values platform needs to install Soperator/Flux.
 
 locals {
   soperator = {
@@ -6,7 +6,6 @@ locals {
     iam_tenant_id                = var.iam_tenant_id
     iam_project_id               = var.iam_project_id
     cluster_name                 = var.company_name
-    name                         = local.slurm_cluster_name
     use_preinstalled_gpu_drivers = true
     cuda_version                 = "13.0.2"
     node_count = {
@@ -110,10 +109,8 @@ locals {
       plugin     = "topology/tree"
       block_size = null
     }
-    login_allocation_id        = module.k8s.static_ip_allocation_id
-    login_public_ip            = true
-    login_ssh_root_public_keys = var.slurm_login_ssh_root_public_keys
-    flux_namespace             = local.flux_namespace
+    login_allocation_id = module.k8s.static_ip_allocation_id
+    login_public_ip     = true
   }
 }
 
@@ -125,11 +122,6 @@ output "k8s_cluster_id" {
 output "k8s_cluster_context" {
   description = "kubectl context name written by the k8s module."
   value       = module.k8s.cluster_context
-}
-
-output "slurm_cluster_name" {
-  description = "SlurmCluster namespace/name (soperator)."
-  value       = local.slurm_cluster_name
 }
 
 output "soperator" {

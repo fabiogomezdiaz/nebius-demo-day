@@ -32,15 +32,15 @@ Destroy **workloads → platform → infra** so Kubernetes cleanup runs while th
 | `providers.tf` | Nebius / units / string-functions providers |
 | `01-locals.tf` | Naming and resource lookups |
 | `02-filestore.tf` | Jail, spool, `/mnt/data` |
-| `03-cleanup.tf` | Project leftover cleanup |
-| `04-k8s.tf` | MK8s and node groups |
-| `05-outputs.tf` | Remote-state payload for platform (`soperator` object) |
-| `06-kubeconfig.tf` | Writes `terraform/kubeconfig` |
+| `03-k8s.tf` | MK8s and node groups |
+| `04-outputs.tf` | Remote-state payload for platform (`soperator` object) |
+| `05-kubeconfig.tf` | Writes `terraform/kubeconfig` |
+| `cleanup.tf` | Leftover `pvc-*` disks on infra destroy |
 
 ## Apply
 
 ```bash
-./scripts/01-seed_envrc.sh
+./scripts/01-seed_tfvars.sh
 ./scripts/02-apply_infra.sh                 # cluster + kubeconfig
 ./scripts/03-apply_platform.sh              # platform (includes Soperator) + login.sh
 ```

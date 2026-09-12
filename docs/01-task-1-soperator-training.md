@@ -24,23 +24,15 @@ Installs Terraform, [Nebius CLI](https://docs.nebius.com/cli/quickstart), kubect
 
 Nebius console access for the target tenant and project. Run `nebius profile create` if the CLI is not logged in.
 
-## Local env files
+## Seed Terraform inputs
 
 From the repository root, after `nebius profile create`:
 
 ```bash
-./scripts/01-seed_envrc.sh
+./scripts/01-seed_tfvars.sh
 ```
 
-Writes `NEBIUS_TENANT_ID` / `NEBIUS_PROJECT_ID` from `nebius config get` (lab defaults if the profile has none) into `terraform/infra/.envrc`, and the contents of `~/.ssh/id_rsa.pub` into `slurm_login_ssh_root_public_keys`. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
-
-```bash
-cd terraform/infra
-source .envrc
-nebius iam whoami
-```
-
-`.envrc` exports `TF_VAR_vpc_subnet_id` from the project’s default subnet. Subnet IDs are not committed.
+Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key and kubeconfig path into `terraform/platform/terraform.tfvars` (and workloads). Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
 
 ## Apply infrastructure
 

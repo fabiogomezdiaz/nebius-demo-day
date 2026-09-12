@@ -7,17 +7,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLUSTER="${ROOT}/terraform/infra"
 
-if [[ ! -f "${CLUSTER}/.envrc" ]]; then
-  echo "Missing ${CLUSTER}/.envrc — run ./scripts/01-seed_envrc.sh first." >&2
+if [[ ! -f "${CLUSTER}/terraform.tfvars" ]]; then
+  echo "Missing ${CLUSTER}/terraform.tfvars — run ./scripts/01-seed_tfvars.sh first." >&2
   exit 1
 fi
 
-cd "${CLUSTER}"
-set +u
-# shellcheck disable=SC1091
-source ./.envrc
-set -u
+export NEBIUS_IAM_TOKEN="$("${ROOT}/scripts/retry.sh" -- nebius iam get-access-token)"
 
+cd "${CLUSTER}"
 terraform init -reconfigure
 if terraform state list 2>/dev/null | grep -q .; then
   echo "Destroying terraform/infra (you will be asked to type yes)..."

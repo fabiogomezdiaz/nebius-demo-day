@@ -10,7 +10,7 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# envrc.example uses GNU md5sum, not BSD md5.
+# GNU md5sum, not BSD md5.
 have_md5sum() {
   if have md5sum && md5sum --version >/dev/null 2>&1; then
     return 0
@@ -18,7 +18,7 @@ have_md5sum() {
   have gmd5sum
 }
 
-# envrc.example uses mikefarah yq (yq '.path'), not kislyuk/yq.
+# mikefarah yq (yq '.path'), not kislyuk/yq.
 have_yq() {
   have yq
 }
@@ -136,7 +136,7 @@ case "${os}" in
     if [[ " ${missing[*]} " == *" coreutils "* ]]; then
       gnubin="$(brew --prefix coreutils)/libexec/gnubin"
       echo
-      echo "GNU coreutils installed. envrc needs md5sum on PATH:"
+      echo "GNU coreutils installed. Put md5sum on PATH:"
       echo "  export PATH=\"${gnubin}:\$PATH\""
     fi
     ;;
@@ -179,4 +179,4 @@ fi
 
 echo "Prerequisites OK."
 echo "Next: nebius profile create   # if not already logged in"
-echo "Then: ./scripts/01-seed_envrc.sh"
+echo "Then: ./scripts/01-seed_tfvars.sh"

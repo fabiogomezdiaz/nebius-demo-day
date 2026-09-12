@@ -32,7 +32,7 @@ fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
 
 `controller-0` CrashLoopBackOff. Workers stay `Init:3/4` pinging a DOWN controller.
 
-**Fix** in `terraform/infra/05-outputs.tf`: when `gpus == 1`, emit one line, `/dev/nvidia0`, `Cores=0-15`. Apply **infra** (updates the remote-state `soperator` object) then **platform** (Flux rewrites `gres.conf`). Kubernetes `nvidia.com/gpu` is a separate path; this crash is only Slurm.
+**Fix** in `terraform/infra/04-outputs.tf`: when `gpus == 1`, emit one line, `/dev/nvidia0`, `Cores=0-15`. Apply **infra** (updates the remote-state `soperator` object) then **platform** (Flux rewrites `gres.conf`). Kubernetes `nvidia.com/gpu` is a separate path; this crash is only Slurm.
 
 **Follow-on:** `slurmctld` later logged `invalid GRES core specification (0-15)`. These nodes are 8 physical cores × 2 threads; `Cores=0-7` may be more correct for GPU binding. Training still ran with `0-15`. If GPU jobs start failing on core maps, try `0-7`.
 

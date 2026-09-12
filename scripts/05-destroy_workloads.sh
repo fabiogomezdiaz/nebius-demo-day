@@ -4,12 +4,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CLUSTER="${ROOT}/terraform/infra"
 WORKLOADS="${ROOT}/terraform/workloads"
 export KUBECONFIG="${KUBECONFIG:-${ROOT}/terraform/kubeconfig}"
 
-if [[ ! -f "${CLUSTER}/.envrc" ]]; then
-  echo "Missing ${CLUSTER}/.envrc — run ./scripts/01-seed_envrc.sh first." >&2
+if [[ ! -f "${WORKLOADS}/terraform.tfvars" ]]; then
+  echo "Missing ${WORKLOADS}/terraform.tfvars — run ./scripts/01-seed_tfvars.sh first." >&2
   exit 1
 fi
 if [[ ! -f "${KUBECONFIG}" ]]; then
@@ -17,22 +16,9 @@ if [[ ! -f "${KUBECONFIG}" ]]; then
   exit 1
 fi
 
-cd "${CLUSTER}"
-set +u
-# shellcheck disable=SC1091
-source ./.envrc
-set -u
+export NEBIUS_IAM_TOKEN="$("${ROOT}/scripts/retry.sh" -- nebius iam get-access-token)"
 
 cd "${WORKLOADS}"
-set +u
-# shellcheck disable=SC1091
-if [[ -f ./.envrc ]]; then
-  source ./.envrc
-else
-  source ./envrc.example
-fi
-set -u
-
 terraform init -reconfigure
 if terraform state list 2>/dev/null | grep -q .; then
   echo "Destroying terraform/workloads (you will be asked to type yes)..."

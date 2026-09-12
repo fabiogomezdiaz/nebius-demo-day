@@ -3,8 +3,8 @@
 | # | Script | When |
 | --- | --- | --- |
 | 00 | `00-install_prereqs.sh` | Install Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils (skips if present) |
-| 01 | `01-seed_envrc.sh` | Write tenant/project into `.envrc` and SSH pubkey into `terraform.tfvars` |
-| 02 | `02-apply_infra.sh` | `source .envrc && terraform init && terraform apply` in `terraform/infra` |
+| 01 | `01-seed_tfvars.sh` | Write tenant, project, region, subnet, kubeconfig path, and SSH pubkey into `terraform.tfvars` |
+| 02 | `02-apply_infra.sh` | `terraform init && terraform apply` in `terraform/infra` |
 | 03 | `03-apply_platform.sh` | Apply `platform` (Flux + Soperator + GPU Operator) then `workloads` (`login.sh`) |
 | 04 | `04-sync_workloads.sh` | Copy `workloads/` onto the jail (`/mnt/data`) |
 | 05 | `05-destroy_workloads.sh` | `terraform destroy` in `terraform/workloads` (plan + yes) |
