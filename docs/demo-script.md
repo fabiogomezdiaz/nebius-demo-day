@@ -19,7 +19,7 @@ Retain the live cluster for the session. Do not destroy it beforehand.
 ## Likely follow-ups
 
 **Why did slurmctld crash until you overrode GRES?**  
-The solutions-library `gres_config` is keyed by **platform** (`gpu-h100-sxm`), not preset. It describes an 8-GPU NVLink node. These workers are `1gpu-16vcpu-200gb`. `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`, but `gres.conf` still listed eight devices and `Cores=0-31`. `slurmctld` rejected that and CrashLoop’d. Overlay: one line, `/dev/nvidia0`, `Cores=0-15`. Code: `terraform/infra/04-outputs.tf`. Detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md#gres-gresconf).
+The solutions-library `gres_config` is keyed by **platform** (`gpu-h100-sxm`), not preset. It describes an 8-GPU NVLink node. These workers are `1gpu-16vcpu-200gb`. `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`, but `gres.conf` still listed eight devices and `Cores=0-31`. `slurmctld` rejected that and CrashLoop’d. Overlay: one line, `/dev/nvidia0`, `Cores=0-7` (not thread IDs `0-15`, which silently drops GPUs). Code: `terraform/infra/04-outputs.tf`. Detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md#gres-gresconf) and [01-task-1-gotchas.md](01-task-1-gotchas.md).
 
 **How would this change with 8×H100 and InfiniBand?**  
 Set `gpu_cluster.infiniband_fabric`, use `8gpu-128vcpu-1600gb`, drop `NCCL_IB_DISABLE`, drop the 1-GPU GRES override, add Network Operator if images are not driverfull, and scale `--nproc_per_node=8`.

@@ -2,7 +2,7 @@
 
 Pinned release: **`soperator-v4.1.8-1`** (operator version `4.1.8`). Do not use `main`.
 
-Catalog of everything that broke and why: [gotchas.md](gotchas.md).
+Catalog of everything that broke and why: [01-task-1-gotchas.md](01-task-1-gotchas.md).
 
 The stock recipe is in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library/tree/soperator-v4.1.8-1/soperator). This repository does not fork or vendor the modules. `terraform init` fetches them with `git::` at that tag.
 
@@ -48,13 +48,13 @@ In the recipe (`soperator/modules/k8s/k8s_ng_workers_v2.tf`):
 - `gpu_cluster.id` is set, so fabric validation passes and `local.gpu_clusters_v2` stays empty (a cluster is created only when `id` is empty and `infiniband_fabric` is set).
 - `1gpu-16vcpu-200gb` has `gpu_cluster_compatible = false`, so `template.gpu_cluster` on the MK8s node group remains `null`. The sentinel id is never attached.
 - `use_preinstalled_gpu_drivers = true` skips installing GPU/Network operators from the Soperator chart (drivers come from the Nebius GPU image). This overlay installs GPU Operator from the marketplace in `terraform/platform` with `driver.enabled=false`. Network Operator is omitted: this preset has no InfiniBand HCA.
-- Stock `gres_config_by_platform` is the 8-GPU H100 layout (`Cores=0-31`, eight `/dev/nvidiaN` lines). On `1gpu-16vcpu-200gb` that makes `slurmctld` exit with `Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)`. Infra overrides GRES to one GPU: `/dev/nvidia0`, `Cores=0-15`. See [GRES](#gres-gresconf).
+- Stock `gres_config_by_platform` is the 8-GPU H100 layout (`Cores=0-31`, eight `/dev/nvidiaN` lines). On `1gpu-16vcpu-200gb` that makes `slurmctld` exit with `Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)`. Infra overrides GRES to one GPU: `/dev/nvidia0`, `Cores=0-7`. `Cores=0-15` (thread IDs) lets slurmctld start but drops `gres/gpu` from scheduling. See [GRES](#gres-gresconf).
 
 ## GRES (`gres.conf`)
 
 Explain this if asked why the controller CrashLoop’d, or why the overlay is not “just tfvars.”
 
-**GRES** is Slurm’s **Generic RESource** map. Kubernetes learns GPUs from the device plugin (`nvidia.com/gpu`). Slurm does not: `slurmctld` only believes `gres.conf` — device file, GPU type, and which CPU IDs may use that GPU. Soperator writes that file from Terraform `worker_nodesets[].gres_config`. A map that lists more cores or `/dev/nvidiaN` files than the node has is fatal.
+**GRES** is Slurm’s **Generic RESource** map. Kubernetes learns GPUs from the device plugin (`nvidia.com/gpu`). Slurm does not: `slurmctld` only believes `gres.conf` — device file, GPU type, and which **logical cores** may use that GPU. `Cores=` must be a complete socket (`lstopo` Core L#), not CPU thread IDs. Soperator writes that file from Terraform `worker_nodesets[].gres_config`. A map that lists more cores or `/dev/nvidiaN` files than the node has is fatal.
 
 The solutions library looks up GRES by **platform** (`gpu-h100-sxm`), not by **preset**. That map is the 8-GPU NVLink node:
 
@@ -64,7 +64,7 @@ File=/dev/nvidia4 Cores=0-31 Links=-1,1,1,1,1,1,1,1
 File=/dev/nvidia3 Cores=32-63 ...
 ```
 
-This lab’s workers are `1gpu-16vcpu-200gb`: 16 logical CPUs, one GPU at `/dev/nvidia0`. `slurm.conf` already has the right node line (`CPUs=16`, `Gres=gpu:nvidia_h100_80gb_hbm3:1`). `gres.conf` did not. `slurmctld` then fatals:
+This lab’s workers are `1gpu-16vcpu-200gb`: 16 logical CPUs (1 socket × 8 cores × 2 threads), one GPU at `/dev/nvidia0`. `slurm.conf` already has the right node line (`CPUs=16`, `Gres=gpu:nvidia_h100_80gb_hbm3:1`). `gres.conf` did not. `slurmctld` then fatals:
 
 ```text
 fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
@@ -75,10 +75,10 @@ fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
 Infra overlay in `terraform/infra/04-outputs.tf`: when the preset reports `gpus == 1`, replace the stock list with:
 
 ```text
-AutoDetect=off Name=gpu Type=nvidia_h100_80gb_hbm3 File=/dev/nvidia0 Cores=0-15 Links=-1 Flags=nvidia_gpu_env
+AutoDetect=off Name=gpu Type=nvidia_h100_80gb_hbm3 File=/dev/nvidia0 Cores=0-7 Links=-1 Flags=nvidia_gpu_env
 ```
 
-Apply **infra** (updates the `soperator` output) then **platform** (Flux/Helm rewrite `gres.conf`). Kubernetes GPUs (`nvidia.com/gpu` via GPU Operator) are a separate path; this bug is only Slurm’s scheduler config.
+`Cores=0-15` (all CPU thread IDs) is invalid: slurmctld logs `invalid GRES core specification (0-15)` and GPU jobs sit `PD (Resources)` on idle nodes. Apply **infra** (updates the `soperator` output) then **platform** (Flux/Helm rewrite `gres.conf`). Kubernetes GPUs (`nvidia.com/gpu` via GPU Operator) are a separate path; this bug is only Slurm’s scheduler config.
 
 On 8×H100 you would drop this override and use the stock 8-device map (and InfiniBand).
 
@@ -96,7 +96,7 @@ On 8×H100 you would drop this override and use the stock 8-device map (and Infi
 | Accounting | 8vcpu-32gb | disabled | Not required by demo tasks |
 | NFS | 32vcpu-128gb | disabled | Demo I/O is filestore jail + `/mnt/data` |
 | Jail | existing ID | new `spec` | Do not reuse another jail’s filesystem |
-| GRES (`gres.conf`) | 8×H100 NVLink map | 1×GPU `/dev/nvidia0` `Cores=0-15` | Stock map is 8-GPU-only; slurmctld crashes on 16 CPUs |
+| GRES (`gres.conf`) | 8×H100 NVLink map | 1×GPU `/dev/nvidia0` `Cores=0-7` | Stock map is 8-GPU-only; slurmctld crashes on 16 CPUs. Thread IDs `0-15` are also invalid. |
 | `node_local_image_disk` | 930 GiB IO_M3 | disabled | Enroot/Docker image disks are unused |
 | Backups | auto | `force_disable` | Smaller surface for a short-lived lab |
 

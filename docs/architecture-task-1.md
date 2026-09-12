@@ -2,7 +2,7 @@
 
 Task 1 is **2-node LoRA SFT** of `Qwen2.5-7B-Instruct` on Soperator. Training is a Slurm job (`sbatch`), not a Kubernetes GPU Deployment. InfiniBand is not used (`1gpu-16vcpu-200gb` cannot join a GPU cluster).
 
-Gotchas from standing this up: [gotchas.md](gotchas.md).
+Gotchas from standing this up: [01-task-1-gotchas.md](01-task-1-gotchas.md).
 
 Two applies, in order. Each stack owns a different layer.
 
@@ -49,7 +49,7 @@ Node groups are created now; Slurm pods land on them in the platform apply.
 Overlays that exist because this is **not** the stock 8-GPU InfiniBand recipe:
 
 - `gpu_cluster.id = "ethernet-not-attached"` — satisfies the stock Terraform check without creating a GPU cluster (this preset cannot join one).
-- 1-GPU **GRES** (`gres.conf`: Slurm’s map of which GPU device files and CPU cores exist) — `/dev/nvidia0`, `Cores=0-15`. Stock map is 8 GPUs / `Cores=0-31` and crashes `slurmctld` on 16-CPU nodes.
+- 1-GPU **GRES** (`gres.conf`: Slurm’s map of which GPU device files and CPU cores exist) — `/dev/nvidia0`, `Cores=0-7`. Stock map is 8 GPUs / `Cores=0-31` and crashes `slurmctld` on 16-CPU nodes. Thread IDs `Cores=0-15` let the controller start but drop GPUs from scheduling.
 - Preinstalled CUDA drivers on the MK8s image (`use_preinstalled_gpu_drivers = true`).
 - Accounting (hardcoded off), NFS, public o11y: off.
 

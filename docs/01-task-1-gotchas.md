@@ -1,6 +1,8 @@
-# Gotchas
+# Task 1 gotchas
 
-Things that bit this lab while putting Soperator `4.1.8` on **2×1×H100 Ethernet** (preset `1gpu-16vcpu-200gb`). The stock recipe assumes **8×H100 + InfiniBand**. Deep dive on the InfiniBand skip and GRES (how Slurm is told which GPUs exist): [terraform-infiniband-changes.md](terraform-infiniband-changes.md).
+Things that bit this lab while putting Soperator `4.1.8` on **2×1×H100 Ethernet** (preset `1gpu-16vcpu-200gb`) and running two-node LoRA SFT. The stock recipe assumes **8×H100 + InfiniBand**.
+
+Terraform overlay detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md). Runbook: [01-task-1-soperator-training.md](01-task-1-soperator-training.md).
 
 ## Pin the recipe
 
@@ -22,9 +24,13 @@ Do not install Network Operator. There is no InfiniBand HCA.
 
 ## GRES is keyed by platform, not preset
 
-**GRES** is Slurm’s **Generic RESource** map. `slurmctld` (the scheduler) does not discover GPUs the way Kubernetes does. It reads `gres.conf`: device file (`/dev/nvidia0`), GPU type, and which CPU IDs may use that GPU (`Cores=…`). Soperator writes that file from Terraform `worker_nodesets[].gres_config`. If the map claims more CPUs or devices than the node has, `slurmctld` exits and the controller pod CrashLoops.
+**GRES** is Slurm’s **Generic RESource** map. `slurmctld` (the scheduler) does not discover GPUs the way Kubernetes does. It reads `gres.conf`: device file (`/dev/nvidia0`), GPU type, and which CPU IDs may use that GPU (`Cores=…`). Soperator writes that file from Terraform `worker_nodesets[].gres_config`. Kubernetes `nvidia.com/gpu` is a separate path.
 
-Stock `gres_config_by_platform["gpu-h100-sxm"]` is the **8-GPU NVLink** map (`/dev/nvidia0`–`7`, `Cores=0-31` / `32-63`). These workers are 1 GPU / 16 CPUs. `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`. `gres.conf` did not.
+Stock `gres_config_by_platform["gpu-h100-sxm"]` is the **8-GPU NVLink** map (`/dev/nvidia0`–`7`, `Cores=0-31` / `32-63`). These workers are 1 GPU / 16 CPUs (`S:C:T = 1:8:2`). `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`. `gres.conf` did not.
+
+There are two failure modes. Do not stop at the first.
+
+### `Cores=0-31` — slurmctld CrashLoop
 
 ```text
 fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
@@ -32,9 +38,35 @@ fatal: Invalid GRES data for gpu, Cores=0-31 (only 16 CPUs are available)
 
 `controller-0` CrashLoopBackOff. Workers stay `Init:3/4` pinging a DOWN controller.
 
-**Fix** in `terraform/infra/04-outputs.tf`: when `gpus == 1`, emit one line, `/dev/nvidia0`, `Cores=0-15`. Apply **infra** (updates the remote-state `soperator` object) then **platform** (Flux rewrites `gres.conf`). Kubernetes `nvidia.com/gpu` is a separate path; this crash is only Slurm.
+### `Cores=0-15` — controller starts, GPU jobs never place
 
-**Follow-on:** `slurmctld` later logged `invalid GRES core specification (0-15)`. These nodes are 8 physical cores × 2 threads; `Cores=0-7` may be more correct for GPU binding. Training still ran with `0-15`. If GPU jobs start failing on core maps, try `0-7`.
+`gres.conf Cores=` is **logical cores on a complete socket**, not CPU thread IDs. `cpus - 1` = `15` is wrong on this SKU. `slurmctld` logs:
+
+```text
+error: _foreach_rebuild_topo: gres/gpu: invalid GRES core specification (0-15) on node worker-0
+```
+
+Then:
+
+- `scontrol show node` still shows `Gres=gpu:nvidia_h100_80gb_hbm3:1`
+- `CfgTRES=cpu=16,mem=176G,billing=16` with **no `gres/gpu`**
+- Both workers `idle`, GPU jobs `PD (Resources)`
+- CPU-only jobs (`srun` without GRES) run, but `nvidia-smi` in those jobs is `No devices were found`
+
+**Fix** in `terraform/infra/04-outputs.tf`: when `gpus == 1`, emit one line, `/dev/nvidia0`, `Cores=0-7` (`boards × sockets_per_board × cores_per_socket - 1`). Apply **infra** then **platform**. After a good map, `Gres=` becomes `gpu:…:1(S:0)` (bound to socket 0).
+
+`CfgTRES` may still omit `gres/gpu` in `scontrol show node`. That is accounting. Trust `Gres=…(S:0)` plus `cuda=True` in the training log.
+
+### Live patch (do not wait for a 240-minute platform apply)
+
+Flux HelmRelease `flux-system-soperator-fluxcd-nodesets` reconciles every **5 minutes** and will put `Cores=0-15` back if you only edit `gres.conf`. Patch all four, then bounce `slurmctld` (`Cores=` changes need a restart, not just `scontrol reconfigure`):
+
+1. `NodeSet` `worker` `spec.nodeConfig.gresConfig`
+2. HelmRelease `flux-system-soperator-fluxcd-nodesets` values
+3. ConfigMap `soperator/soperator-slurm-configs` key `gres.conf`
+4. ConfigMap `flux-system/terraform-fluxcd-values` (parent values)
+
+Then `kubectl -n soperator delete pod controller-0` and wait Ready. A GPU job that was `PD` can start as soon as the controller is back.
 
 ## Activechecks hang the platform apply for 240 minutes
 
@@ -56,9 +88,57 @@ On this lab that write never arrives during bootstrap:
 
 `soperator-rest-svc` can still be missing after apply. Soperator will not auto-reconfigure. If `sinfo` shows no nodes, `scontrol reconfigure` (and POWER_UP if they stay `POWERED_DOWN`).
 
+## Hidden-partition checks steal GPUs and use a truncated user name
+
+Soperator ActiveChecks (`cuda-samples`, `all-reduce-perf-nccl-*`, `gpu-fryer`, …) submit as Slurm user **`soperato`**, not `soperator`. `scancel -u soperator` fails with `Invalid user name`. Cancel by job id or `scancel -u soperato`.
+
+Those jobs sit on partition **`hidden`**. They can leave `GresUsed` non-zero or keep a training job `PD (Resources)` / `Nodes required for job are DOWN, DRAINED or reserved for jobs in higher priority partitions`. Cancel them before a training run.
+
+## Submitting the training job
+
+Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment stays `Pending`.
+
+What actually ran (job 66): two nodes, `--gpus-per-node=1`, `--ntasks-per-node=1`, `--cpus-per-task=1`, `--mem=80G`, then `bash train.sbatch` as `--wrap`. `#SBATCH` lines inside the wrapped script are **ignored**; flags must be on the `sbatch` command (or you must `sbatch train.sbatch` without `--wrap`).
+
+| Flag / habit | What happens |
+| --- | --- |
+| No GRES (`sbatch` CPU-only, or `--gpus-per-node` ignored while `Cores=0-15`) | Job runs; `cuda=False`; `nvidia-smi`: no devices. Do not treat this as a successful train. |
+| `--gres=gpu:1` on a **bare** `srun` outside an allocation | `Invalid generic resource (gres) specification` |
+| `--exclusive --mem=0` | `ReqTRES` asks for all RAM (`mem=352G` on two nodes). Pending reason: nodes DOWN, DRAINED, or reserved for higher-priority partitions — even when `sinfo` shows idle. |
+| `--gpus-per-node=1` with a valid `Cores=0-7` map | `TresPerNode=gres/gpu:1`. This is the Nebius-doc pattern that placed the job. |
+
+Confirm before assuming the queue is the problem:
+
+```bash
+scontrol show node worker-0 | egrep 'Gres|CfgTRES|State|Reason'
+scontrol show job <id> | egrep 'JobState|Reason|ReqTRES|TresPerNode|NodeList'
+```
+
+You want `Gres=gpu:…:1(S:0)` on the node and `TresPerNode=gres/gpu:1` on the job.
+
+## NCCL must be forced onto Ethernet
+
+This preset has no IB NIC. Without these, `torchrun` hangs at NCCL init:
+
+```bash
+export NCCL_IB_DISABLE=1
+export NCCL_NET=Socket
+export NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-eth0}"
+```
+
+`hostname -I` on the worker can return **docker0** (`172.17.0.1`) first. Rendezvous then binds the wrong address and NCCL never forms (or both ranks come up as rank 0). `train.sbatch` takes the IPv4 address of `eth0` instead.
+
+If it still hangs, run `ip -br addr` on a worker and set `NCCL_SOCKET_IFNAME` / rendezvous to that interface.
+
+## Training files are not in Terraform
+
+`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
+
+Success for this lab: `world_size=2`, `cuda=True`, `n_gpu=1` **per rank** (two nodes, one H100 each), adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`. `n_gpu=2` in one process would be wrong on this SKU.
+
 ## Topology labels persist after a platform wipe
 
-Ethernet nodes do not get InfiniBand labels `topology.nebius.com/tier-0` / `tier-1`. Manual `unknown` labels on the GPU nodes **survived** platform wipe. Workers we used: `computeinstance-e00zp4hb84yztx7dmp`, `computeinstance-e00n34shytzph1hj79`. If a second platform apply mis-schedules or topology plugins complain, check leftover node labels.
+Ethernet nodes do not get InfiniBand labels `topology.nebius.com/tier-0` / `tier-1`. Manual `unknown` labels on the GPU nodes **survived** platform wipe. If a second platform apply mis-schedules or topology plugins complain, check leftover node labels.
 
 ## VictoriaMetrics Pending is expected
 
@@ -81,28 +161,6 @@ Soperator installs the operator and `SlurmCluster` as Flux HelmReleases. Removin
 Flux HelmReleases use `helm.sh/resource-policy: keep`. `terraform destroy` in platform uninstalls the Helm release object and leaves namespaces, CRDs, and finalizers. Destroy **platform → infra** so wipe still has a cluster.
 
 `06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker in `cleanup.tf` is created **first** so it is always in state even if Soperator apply hangs.
-
-## Soperator workers own both GPUs
-
-Worker pods bind `nvidia.com/gpu`. A Kubernetes GPU Deployment (or an MPIJob) stays `Pending`. Training is `sbatch` on the login node.
-
-Do not scale workers to 0 unless you are deliberately giving the GPUs to something else. Task 1 does not.
-
-## Training files are not in Terraform
-
-`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. SSH with `05-login.sh`. Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
-
-## NCCL must be forced onto Ethernet
-
-This preset has no IB NIC. Without these, `torchrun` hangs at NCCL init:
-
-```bash
-export NCCL_IB_DISABLE=1
-export NCCL_NET=Socket
-export NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-eth0}"
-```
-
-If it still hangs, run `ip -br addr` on a worker and set the interface explicitly. `NCCL_SOCKET_IFNAME` wrong → both ranks can come up as rank 0 if rendezvous also mismatches (`--nnodes` / `--rdzv_endpoint`).
 
 ## Do not reuse another cluster’s jail
 
@@ -128,15 +186,23 @@ A filestore that is already a jail for another Slurm cluster must not be attache
 | `gpu_cluster must set either id or infiniband_fabric` | Empty fabric object still set |
 | Node group API error on GPU cluster | Real fabric/id attached to a 1-GPU preset |
 | `controller-0` CrashLoop, `Cores=0-31` | Stock 8-GPU `gres.conf` |
+| GPU jobs `PD (Resources)` on idle nodes; `CfgTRES` has no `gres/gpu` | `gres.conf` `Cores=0-15` (thread IDs); need `Cores=0-7` |
 | `03-apply_platform.sh` sits on `wait_for_soperator_activechecks_hr` | Overlay missing or `depends_on module.slurm` |
 | `sinfo` empty / `srun` PD `(PartitionConfig)` | `slurmctld` never reloaded; REST missing |
 | Nodes `IDLE+CLOUD+POWERED_DOWN` | Need POWER_UP (and maybe slurmd restart) |
+| Nodes `idle*` / DOWN after drain | `scontrol update NodeName=… State=RESUME`; check slurmd |
 | `soperator-rest-svc` / `no such host` | REST not deployed; reconfigure is manual |
+| `scancel: Invalid user name: soperator` | Hidden checks run as `soperato` |
+| `Nodes required for job are DOWN, DRAINED or reserved…` | Hidden jobs, `--exclusive --mem=0`, or GRES reset |
+| Job runs but `cuda=False` / no NVIDIA devices | Allocation has no GRES; do not train |
+| `Invalid generic resource (gres) specification` | `--gres` on a `srun` with no GPU allocation |
+| Rendezvous `172.17.0.1` / both ranks are 0 | `hostname -I` picked docker0; use `eth0` |
+| NCCL hang at init | IB not disabled or wrong `NCCL_SOCKET_IFNAME` |
 | VictoriaMetrics Pending | Ignore |
 | Topology labels after wipe | Leftover `topology.nebius.com/*` on GPU nodes |
 | GPU Deployment Pending | Workers already hold the GPUs |
-| NCCL hang at init | IB not disabled or wrong `NCCL_SOCKET_IFNAME` |
 | Public o11y / missing telemetry profile | `public_o11y_enabled` still true |
 | `yq: command not found` | Prereqs not installed |
 | Jail change missing on a worker | Installed in `/tmp` instead of `/mnt/data` |
 | Platform destroy leaves Flux/Soperator | Helm `keep`; run wipe after destroy |
+| Live `Cores=0-7` reverts to `0-15` | Flux nodesets HelmRelease; patch values + NodeSet, or apply infra then platform |

@@ -248,7 +248,7 @@ def build() -> None:
         "Slurm jobs instead of k8s Deployments — GPUs are already in the Soperator worker pods.",
         "LoRA instead of full SFT — faster, smaller artifact, still a real fine-tune.",
         "Synthetic FAQ instead of Alpaca — the quality delta is visible in a 30-second curl.",
-        "GRES overlay — stock gres.conf is 8×H100 (Cores=0-31). This preset is 1 GPU / 16 CPUs; slurmctld CrashLoops without /dev/nvidia0 Cores=0-15.",
+        "GRES overlay — stock gres.conf is 8×H100 (Cores=0-31). This preset is 1 GPU / 8 cores; slurmctld CrashLoops without /dev/nvidia0 Cores=0-7.",
         "essential active checks — IB NCCL health checks cannot pass on this preset.",
         "New jail + /mnt/data — a jail filesystem must not be shared across two clusters.",
         "If we had 8×H100 + IB: restore infiniband_fabric, 8gpu preset, drop NCCL_IB_DISABLE, nproc_per_node=8.",
@@ -259,7 +259,7 @@ def build() -> None:
     s = blank(prs)
     title_block(s, "Likely failures")
     bullets(s, [
-        "controller-0 CrashLoop — stock GRES Cores=0-31 on a 16-CPU node. Overlay 05-outputs.tf then re-apply platform.",
+        "controller-0 CrashLoop — stock GRES Cores=0-31 on a 16-CPU node. Overlay 04-outputs.tf then re-apply platform.",
         "Validation error on gpu_cluster — empty infiniband_fabric is still set.",
         "Node group API error — fabric/id still set on a 1-GPU preset.",
         "yq: command not found — install yq on the machine running Terraform.",

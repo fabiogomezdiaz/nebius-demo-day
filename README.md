@@ -5,7 +5,7 @@ Deploy [Soperator](https://github.com/nebius/soperator) from the official [solut
 **Pinned recipe:** [`soperator-v4.1.8-1`](https://github.com/nebius/nebius-solutions-library/releases/tag/soperator-v4.1.8-1) (not `main`).
 
 Glossary: [docs/00-glossary.md](docs/00-glossary.md).  
-Gotchas (GRES — Slurm’s GPU device map — `gpu_cluster`, activechecks hang, and the rest): [docs/gotchas.md](docs/gotchas.md).
+Task 1 gotchas (GRES — Slurm’s GPU device map — `gpu_cluster`, activechecks hang, GPU jobs that never place): [docs/01-task-1-gotchas.md](docs/01-task-1-gotchas.md).
 
 ## Scope
 

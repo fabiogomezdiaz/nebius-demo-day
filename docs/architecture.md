@@ -74,7 +74,7 @@ gpu_cluster = {
 
 That fails validation (`gpu_cluster` must set `id` or `infiniband_fabric`). `gpu_cluster = null` also fails the stock fabric check, which requires a cluster on every GPU preset. This overlay sets `gpu_cluster.id = "ethernet-not-attached"` so validation passes. `1gpu-16vcpu-200gb` is not `gpu_cluster_compatible`, so the MK8s node group still has `template.gpu_cluster = null` and no `nebius_compute_v1_gpu_cluster` is created.
 
-Stock **GRES** (`gres.conf`: Slurm’s GPU device-and-CPU map) is also 8-GPU (`Cores=0-31`). That crashes `slurmctld` on these 16-CPU nodes. Infra overrides it to `/dev/nvidia0` `Cores=0-15`. See [GRES overlay](terraform-infiniband-changes.md#gres-gresconf).
+Stock **GRES** (`gres.conf`: Slurm’s GPU device-and-CPU map) is also 8-GPU (`Cores=0-31`). That crashes `slurmctld` on these 16-CPU nodes. Infra overrides it to `/dev/nvidia0` `Cores=0-7` (logical cores on the socket). `Cores=0-15` is invalid and GPU jobs never place. See [GRES overlay](terraform-infiniband-changes.md#gres-gresconf).
 
 ## GPU ownership
 
