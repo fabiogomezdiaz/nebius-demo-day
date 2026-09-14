@@ -1,25 +1,22 @@
-# Workloads
+# Task 1 — training files
 
-These scripts run **inside the Slurm jail** on the login node, after `scripts/04-sync_workloads.sh`. Training is done (job 73). Inference / base-vs-LoRA compare are **not** in this folder yet — [docs/overview/status.md](../docs/overview/status.md), [task-2](../docs/task-2/), [task-3](../docs/task-3/).
+LoRA SFT job files. Sync onto the jail with `scripts/04-sync_task-1.sh`, then `sbatch` from the login node. Training is done (job 73). Inference / base-vs-LoRA compare live under [docs/task-2](../docs/task-2/) and [docs/task-3](../docs/task-3/).
 
 | File | Role |
 | --- | --- |
 | `setup_env.sh` | Shared venv on `/mnt/data` so both workers see the same Python |
 | `fetch_dolly.py` | Download Dolly-15k onto this workstation (cache + JSONL preview) |
 | `data/dolly-preview.jsonl` | First 20 Dolly rows, converted to chat `messages` |
-| `data/helios_faq.jsonl` | Optional synthetic fallback (`TRAIN_DATA=...`) |
-| `train.py` / `train.sbatch` | 2-node LoRA SFT; default source is Hugging Face Dolly. Beginner walkthrough: [how-train-py-works.md](../docs/task-1/how-train-py-works.md) |
+| `train.py` / `train.sbatch` | 2-node LoRA SFT on Hugging Face Dolly. Beginner walkthrough: [how-train-py-works.md](../docs/task-1/how-train-py-works.md) |
 
 On the workstation, inspect Dolly with:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install "datasets==3.5.0"
-python workloads/fetch_dolly.py
+python task-1/fetch_dolly.py
 ```
 
-That caches the Hub files under `workloads/hf_cache/` and writes `workloads/data/dolly-preview.jsonl`. On the cluster, `train.sbatch` sets `HF_HOME=/mnt/data/nebius-demo/hf_cache` and `train.py` downloads the same `train[:1500]` slice on first run.
-
-To train the old Helios JSONL instead: `export TRAIN_DATA=/mnt/data/nebius-demo/workloads/data/helios_faq.jsonl`.
+That caches the Hub files under `task-1/hf_cache/` and writes `task-1/data/dolly-preview.jsonl`. On the cluster, `train.sbatch` sets `HF_HOME=/mnt/data/nebius-demo/hf_cache` and `train.py` always downloads the same `train[:1500]` Dolly slice on first run.
 
 Environment variables used by the batch script are documented at the top of `train.sbatch`.

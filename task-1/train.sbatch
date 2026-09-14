@@ -26,20 +26,20 @@ export GLOO_SOCKET_IFNAME="eth0"
 export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
+# Model and Dataset Configuration
 export BASE_MODEL="Qwen/Qwen2.5-7B-Instruct"
 export HF_DATASET="databricks/databricks-dolly-15k"
 export HF_SPLIT="train[:1500]"
-
-# Leave TRAIN_DATA empty so train.py downloads Dolly into HF_HOME and caches it.
-unset TRAIN_DATA
 export OUTPUT_DIR="${PREFIX}/checkpoints/dolly-lora"
 export SEQ_LEN="2048"            # Maximum sequence length for training/inference
 export PER_DEVICE_BATCH="4"      # Batch size per device (GPU)
 export GRAD_ACCUM="4"            # Number of gradient accumulation steps
 export EPOCHS="1"                # Number of training epochs
 
+# Node and Network Configuration: Get head node IP and set rendezvous endpoint
 nodes=( $(scontrol show hostnames "$SLURM_JOB_NODELIST") )
 head_node="${nodes[0]}"
+
 # hostname -I can return docker0 (172.17.0.1) first. Bind rendezvous to eth0.
 head_ip=$(srun --nodes=1 --ntasks=1 -w "${head_node}" \
   bash -c 'ip -4 -o addr show dev eth0 | awk "{print \$4}" | cut -d/ -f1')
@@ -54,4 +54,4 @@ srun torchrun \
   --rdzv_id="${SLURM_JOB_ID}" \
   --rdzv_backend=c10d \
   --rdzv_endpoint="${head_ip}:29500" \
-  "${PREFIX}/workloads/train.py"
+  "${PREFIX}/task-1/train.py"
