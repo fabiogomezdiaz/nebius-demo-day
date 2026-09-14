@@ -2,7 +2,7 @@
 
 `workloads/train.py` is the Python that actually fine-tunes the model. It does **not** start the cluster, allocate GPUs, or talk to Kubernetes. Slurm already did that. This file is the recipe one GPU process follows.
 
-Eraser canvas: [How train.py works](https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas). Cluster-level sequence (sbatch → torchrun): [architecture-task-1.md](architecture-task-1.md).
+Eraser canvas: [How train.py works](https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas). Cluster-level sequence (sbatch → torchrun): [architecture.md](architecture.md).
 
 ![How train.py works](static/how-train-py-works.png)
 

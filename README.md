@@ -4,11 +4,12 @@ Deploy [Soperator](https://github.com/nebius/soperator) from the official [solut
 
 **Pinned recipe:** [`soperator-v4.1.8-1`](https://github.com/nebius/nebius-solutions-library/releases/tag/soperator-v4.1.8-1) (not `main`).
 
-Assignment brief: [docs/00-assignment.md](docs/00-assignment.md).  
-Status (done vs missing): [docs/00-status.md](docs/00-status.md).  
-Task 1 presentation report (job 73 logs + GPU screenshots): [docs/03-task-1-report.md](docs/03-task-1-report.md).  
-Glossary: [docs/00-glossary.md](docs/00-glossary.md).  
-Task 1 gotchas: [docs/01-task-1-gotchas.md](docs/01-task-1-gotchas.md).
+Assignment brief: [docs/overview/assignment.md](docs/overview/assignment.md).  
+Status (done vs missing): [docs/overview/status.md](docs/overview/status.md).  
+Docs index: [docs/README.md](docs/README.md).  
+Task 1 report (job 73 logs + GPU screenshots): [docs/task-1/report.md](docs/task-1/report.md).  
+Glossary: [docs/overview/glossary.md](docs/overview/glossary.md).  
+Task 1 gotchas: [docs/task-1/gotchas.md](docs/task-1/gotchas.md).
 
 ## Scope
 
@@ -51,8 +52,8 @@ flowchart LR
 8. `sbatch /mnt/data/nebius-demo/workloads/train.sbatch`.
 9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`, both GPUs busy.
 
-Detail: [docs/01-task-1-soperator-training.md](docs/01-task-1-soperator-training.md).  
-InfiniBand Terraform notes: [docs/terraform-infiniband-changes.md](docs/terraform-infiniband-changes.md).
+Detail: [docs/task-1/training.md](docs/task-1/training.md).  
+InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/terraform-infiniband.md).
 
 ## Constraints
 
@@ -61,13 +62,13 @@ InfiniBand Terraform notes: [docs/terraform-infiniband-changes.md](docs/terrafor
 - Single-GPU H100 preset **does not support InfiniBand**
 - `public_o11y_enabled = false`
 - Do not share one filesystem between two jails
-- CPU nodesets sized to **8 nodes / 64 vCPU** after Accounting + NFS are applied (see [00-status.md](docs/00-status.md))
+- CPU nodesets sized to **8 nodes / 64 vCPU** after Accounting + NFS are applied (see [docs/overview/status.md](docs/overview/status.md))
 - Retain the environment for the duration of the demo
 
 ## Repository layout
 
 ```
-docs/            # assignment, status, glossary, runbooks, architecture
+docs/            # overview + task-1 … task-4
 gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 scripts/         # 00 prereqs → 04 sync → 05 login → 06–07 destroy
@@ -75,8 +76,8 @@ workloads/       # train.sbatch / train.py / setup_env.sh
 presentation/    # PowerPoint source + generated deck
 ```
 
-Architecture: [docs/architecture-task-1.md](docs/architecture-task-1.md).  
-Walkthrough: [docs/demo-script.md](docs/demo-script.md).  
+Architecture: [docs/task-1/architecture.md](docs/task-1/architecture.md).  
+Walkthrough: [docs/task-1/demo-script.md](docs/task-1/demo-script.md).  
 Slides: [presentation/Nebius-Demo-Day.pptx](presentation/Nebius-Demo-Day.pptx).
 
 ## Overlay notes

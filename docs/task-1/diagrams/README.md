@@ -1,6 +1,6 @@
 # Diagram source (Eraser)
 
-Rendered PNGs live in [`../static/`](../static/). Edit in Eraser, then re-export into `docs/static/`.
+Rendered PNGs live in [`../static/`](../static/). Edit in Eraser, then re-export into `docs/task-1/static/`.
 
 | Diagram | Source | PNG | Eraser |
 | --- | --- | --- | --- |

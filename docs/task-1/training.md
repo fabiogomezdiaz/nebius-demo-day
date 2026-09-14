@@ -2,11 +2,11 @@
 
 Fine-tune `Qwen/Qwen2.5-7B-Instruct` with LoRA across **2 nodes × 1×H100**, using Ethernet NCCL. InfiniBand is not available on this GPU preset.
 
-This is **task 1** (distributed training on Soperator). Assignment: [00-assignment.md](00-assignment.md). Status (inference, compare, 80% GPU): [00-status.md](00-status.md).
+This is **task 1** (distributed training on Soperator). Assignment: [../overview/assignment.md](../overview/assignment.md). Status: [../overview/status.md](../overview/status.md).
 
-Stack diagrams: [architecture-task-1.md](architecture-task-1.md).  
-What `train.py` does, for beginners: [02-how-train-py-works.md](02-how-train-py-works.md).  
-Gotchas from this lab: [01-task-1-gotchas.md](01-task-1-gotchas.md).
+Stack diagrams: [architecture.md](architecture.md).  
+What `train.py` does, for beginners: [how-train-py-works.md](how-train-py-works.md).  
+Gotchas from this lab: [gotchas.md](gotchas.md).
 
 ## Model and method
 
@@ -47,7 +47,7 @@ MK8s creation takes several tens of minutes. This apply does **not** install Sop
 
 Install Flux, Soperator/Slurm, and GPU Operator with `scripts/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
 
-If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. **GRES** (Generic RESource) is Slurm’s config for which GPU devices and CPU cores exist; the stock map assumes 8 GPUs / 32 cores. Infra must emit the 1-GPU overlay (`Cores=0-7`, not thread IDs `0-15`), then re-apply platform. GPU jobs `PD (Resources)` on idle nodes is the `Cores=0-15` follow-on. See [GRES](terraform-infiniband-changes.md#gres-gresconf) and [gotchas](01-task-1-gotchas.md).
+If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. **GRES** (Generic RESource) is Slurm’s config for which GPU devices and CPU cores exist; the stock map assumes 8 GPUs / 32 cores. Infra must emit the 1-GPU overlay (`Cores=0-7`, not thread IDs `0-15`), then re-apply platform. GPU jobs `PD (Resources)` on idle nodes is the `Cores=0-15` follow-on. See [GRES](terraform-infiniband.md#gres-gresconf) and [gotchas](gotchas.md).
 
 ```bash
 export KUBECONFIG="$PWD/terraform/kubeconfig"
@@ -87,14 +87,14 @@ Success criteria:
 - `squeue` shows two nodes allocated
 - Log lines include `world_size=2`, `cuda=True`, and `n_gpu=1` (one GPU per rank)
 - NCCL did not hang waiting for InfiniBand (`NCCL_IB_DISABLE=1` is set in the batch script)
-- Adapters land at `/mnt/data/nebius-demo/checkpoints/helios-lora`
+- Adapters land at `/mnt/data/nebius-demo/checkpoints/dolly-lora`
 
 Evidence to keep:
 
 - `sinfo` / `squeue` during the job
 - Training log with decreasing loss
 - Nebius console GPU utilization on both H100s
-- `ls -lh /mnt/data/nebius-demo/checkpoints/helios-lora`
+- `ls -lh /mnt/data/nebius-demo/checkpoints/dolly-lora`
 
 ## How the job runs
 
@@ -102,7 +102,7 @@ Evidence to keep:
 2. `srun` starts one `torchrun` per node.
 3. Rank 0 listens on Ethernet. Rank 1 joins.
 4. Each rank loads Qwen2.5-7B, freezes base weights, attaches LoRA.
-5. Each rank trains on a shard of `workloads/data/helios_faq.jsonl`.
+5. Each rank trains on a shard of Dolly (`train[:1500]`).
 6. Gradients average over TCP (NCCL Socket).
 7. Rank 0 writes adapters to `/mnt/data`.
 
@@ -119,7 +119,7 @@ If training hangs at NCCL init, IB disable flags are missing or `NCCL_SOCKET_IFN
 | NCCL IB health check fails | `active_checks_scope` is not `essential` |
 | Pods pending on GPU taint | Expected for non-Slurm pods |
 | CUDA OOM | Lower `PER_DEVICE_BATCH` in `train.sbatch` |
-| GPU jobs `PD (Resources)` on idle nodes | `gres.conf` `Cores=0-15`; need `Cores=0-7` ([gotchas](01-task-1-gotchas.md)) |
+| GPU jobs `PD (Resources)` on idle nodes | `gres.conf` `Cores=0-15`; need `Cores=0-7` ([gotchas](gotchas.md)) |
 | Job runs with `cuda=False` / no NVIDIA devices | Allocation has no GRES; do not train |
 | `scancel: Invalid user name: soperator` | Hidden ActiveChecks run as `soperato` |
 | Both ranks are rank 0 / rdzv `172.17.0.1` | `hostname -I` picked docker0; bind to `eth0` |

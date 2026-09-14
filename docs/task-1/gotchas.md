@@ -11,10 +11,10 @@ Things that bit this lab while putting Soperator `4.1.8` on **2×1×H100 Etherne
 - Force NCCL onto Ethernet (`NCCL_IB_DISABLE=1`). Bind rendezvous to **`eth0`**, not `hostname -I` (that can be docker0).
 - Hidden ActiveChecks run as user **`soperato`**. `scancel -u soperator` fails.
 - Platform apply hangs 240 minutes unless the Flux overlay turns off bootstrap activechecks. Destroy is **platform → infra**, then wipe (Helm `keep`).
-- Success (training): `world_size=2`, `cuda=True`, `n_gpu=1` per rank, adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`.
-- Still open vs the assignment: inference + serve, base vs LoRA compare, >80% GPU. Accounting/NFS Terraform is in place — apply infra then platform. See [00-status.md](00-status.md).
+- Success (training): `world_size=2`, `cuda=True`, `n_gpu=1` per rank, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`.
+- Still open vs the assignment: inference + serve ([../task-2/](../task-2/)), base vs LoRA compare ([../task-3/](../task-3/)), >80% GPU ([../task-4/](../task-4/)). Accounting/NFS Terraform is in place — apply infra then platform. See [../overview/status.md](../overview/status.md).
 
-Terraform overlay detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md). Runbook: [01-task-1-soperator-training.md](01-task-1-soperator-training.md).
+Terraform overlay detail: [terraform-infiniband.md](terraform-infiniband.md). Runbook: [training.md](training.md).
 
 ## Pin the recipe
 
@@ -146,7 +146,7 @@ If it still hangs, run `ip -br addr` on a worker and set `NCCL_SOCKET_IFNAME` / 
 
 `train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
 
-Success for this lab: `world_size=2`, `cuda=True`, `n_gpu=1` **per rank** (two nodes, one H100 each), adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`. `n_gpu=2` in one process would be wrong on this SKU.
+Success for this lab: `world_size=2`, `cuda=True`, `n_gpu=1` **per rank** (two nodes, one H100 each), adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`. `n_gpu=2` in one process would be wrong on this SKU.
 
 ## Topology labels persist after a platform wipe
 

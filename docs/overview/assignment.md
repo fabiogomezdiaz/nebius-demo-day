@@ -1,6 +1,6 @@
 # Demo Day assignment (source brief)
 
-Copied from the Demo Day email for reference. Progress against it: [00-status.md](00-status.md).
+Copied from the Demo Day email for reference. Progress against it: [status.md](status.md).
 
 ## Tasks
 

@@ -1,8 +1,8 @@
 # Status vs the Demo Day assignment
 
-Brief: [00-assignment.md](00-assignment.md). Cluster is **live**. Do not destroy it.
+Brief: [assignment.md](assignment.md). Cluster is **live**. Do not destroy it.
 
-This repo treated **task 1** as Soperator distributed training. The email also lists inference, a base-vs-trained compare, and >80% GPU use, and calls tasks **2–4** extra mile. Those extras are **not done**. Presentation write-up with job **73** logs and Nebius GPU screenshots: [03-task-1-report.md](03-task-1-report.md).
+This repo treated **task 1** as Soperator distributed training. The email also lists inference, a base-vs-trained compare, and >80% GPU use, and calls tasks **2–4** extra mile. Those extras are **not done**. Presentation write-up: [../task-1/report.md](../task-1/report.md).
 
 ## Done (task 1 — training)
 
@@ -58,13 +58,13 @@ GRES `Cores=0-7` also lands in platform on this apply (replacing the live kubect
 
 | Requirement | Status |
 | --- | --- |
-| Inference on the **same** MK8s cluster, **serving** the trained model | **No.** No vLLM/TGI/sbatch serve job. Worker pods still hold both GPUs; a Kubernetes GPU Deployment would stay Pending. Serving has to be a Slurm job (or workers scaled down — do not do that during the demo). |
-| Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** Dataset was chosen so Helios facts are fictional, but nothing has queried base vs adapter. |
-| Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no.** Job 73 screenshots: both H100s ~100% GPU utilization, ~50 GB used framebuffer (~60% HBM), ~500 W. Spike lasted ~35 s of train. See [03-task-1-report.md](03-task-1-report.md). |
+| Inference on the **same** MK8s cluster, **serving** the trained model | **No.** [../task-2/](../task-2/). Worker pods still hold both GPUs; a Kubernetes GPU Deployment would stay Pending. Serving has to be a Slurm job. |
+| Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** [../task-3/](../task-3/). |
+| Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no.** See [../task-4/](../task-4/) and [../task-1/report.md](../task-1/report.md). |
 
 ## Evidence to grab before the interview
 
-Assembled in [03-task-1-report.md](03-task-1-report.md) (job 73 logs + `docs/static/evidence/` PNGs).
+Assembled in [../task-1/report.md](../task-1/report.md) (job 73 logs + `docs/task-1/static/evidence/` PNGs).
 
 - `sinfo` / `squeue` (or `train-73.log`: `world_size=2`, `cuda=True`, `NET/Socket`)
 - `ls -lh /mnt/data/nebius-demo/checkpoints/dolly-lora`

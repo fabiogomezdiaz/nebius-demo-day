@@ -23,6 +23,6 @@ ctld > w0: srun torchrun rank 0
 ctld > w1: srun torchrun rank 1
 deactivate ctld
 w0 <> w1: Exchange NCCL gradients over Ethernet (NCCL_IB_DISABLE=1, NCCL_NET=Socket)
-w0 > data: Write LoRA adapters to checkpoints/helios-lora
+w0 > data: Write LoRA adapters to checkpoints/dolly-lora
 data --> login: Job complete
 deactivate login

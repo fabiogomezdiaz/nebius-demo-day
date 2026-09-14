@@ -2,7 +2,7 @@
 
 Pinned release: **`soperator-v4.1.8-1`** (operator version `4.1.8`). Do not use `main`.
 
-Catalog of everything that broke and why: [01-task-1-gotchas.md](01-task-1-gotchas.md).
+Catalog of everything that broke and why: [gotchas.md](gotchas.md).
 
 The stock recipe is in [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library/tree/soperator-v4.1.8-1/soperator). This repository does not fork or vendor the modules. `terraform init` fetches them with `git::` at that tag.
 
@@ -113,7 +113,7 @@ The assignment table is **8 CPU nodes / 64 vCPU** (includes Accounting + NFS). G
 | NFS | cpu-d3 | 4vcpu-16gb | 1 | 4 | yes (nfs_in_k8s on that node) |
 | **CPU total** | | | **8** | **64** | |
 
-GPU workers are additional: 2 × `1gpu-16vcpu-200gb` (2 H100s, 32 vCPU). They are not in the 64 vCPU table. See [00-status.md](00-status.md).
+GPU workers are additional: 2 × `1gpu-16vcpu-200gb` (2 H100s, 32 vCPU). They are not in the 64 vCPU table. See [../overview/status.md](../overview/status.md).
 
 ## Region
 

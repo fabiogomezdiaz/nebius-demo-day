@@ -2,8 +2,8 @@
 
 Task 1 is **2-node LoRA SFT** of `Qwen2.5-7B-Instruct` on Soperator. Training is a Slurm job (`sbatch`), not a Kubernetes GPU Deployment. InfiniBand is not used (`1gpu-16vcpu-200gb` cannot join a GPU cluster).
 
-Assignment: [00-assignment.md](00-assignment.md). Status: [00-status.md](00-status.md).  
-Gotchas from standing this up: [01-task-1-gotchas.md](01-task-1-gotchas.md).
+Assignment: [../overview/assignment.md](../overview/assignment.md). Status: [../overview/status.md](../overview/status.md).  
+Gotchas from standing this up: [gotchas.md](gotchas.md).
 
 Two applies, in order. Each stack owns a different layer.
 
@@ -96,9 +96,9 @@ What the job does:
 2. `srun torchrun` starts one process per node (`--nproc_per_node=1`).
 3. Rank 0 is the c10d rendezvous on Ethernet (`eth0`).
 4. Each rank loads Qwen2.5-7B-Instruct, freezes base weights, attaches LoRA.
-5. Each rank trains on a shard of `helios_faq.jsonl`.
+5. Each rank trains on a shard of Dolly (`databricks/databricks-dolly-15k` `train[:1500]`).
 6. Gradients average over TCP (NCCL Socket), not InfiniBand.
-7. Rank 0 writes adapters to `/mnt/data/nebius-demo/checkpoints/helios-lora`.
+7. Rank 0 writes adapters to `/mnt/data/nebius-demo/checkpoints/dolly-lora`.
 
 Success looks like `world_size=2`, decreasing loss, and adapter files on the shared volume.
 

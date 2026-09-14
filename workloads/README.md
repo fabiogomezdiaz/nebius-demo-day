@@ -1,6 +1,6 @@
 # Workloads
 
-These scripts run **inside the Slurm jail** on the login node, after `scripts/04-sync_workloads.sh`. Training is done (job 66). Inference / base-vs-LoRA compare are **not** in this folder yet — [00-status.md](../docs/00-status.md).
+These scripts run **inside the Slurm jail** on the login node, after `scripts/04-sync_workloads.sh`. Training is done (job 73). Inference / base-vs-LoRA compare are **not** in this folder yet — [docs/overview/status.md](../docs/overview/status.md), [task-2](../docs/task-2/), [task-3](../docs/task-3/).
 
 | File | Role |
 | --- | --- |
@@ -8,7 +8,7 @@ These scripts run **inside the Slurm jail** on the login node, after `scripts/04
 | `fetch_dolly.py` | Download Dolly-15k onto this workstation (cache + JSONL preview) |
 | `data/dolly-preview.jsonl` | First 20 Dolly rows, converted to chat `messages` |
 | `data/helios_faq.jsonl` | Optional synthetic fallback (`TRAIN_DATA=...`) |
-| `train.py` / `train.sbatch` | 2-node LoRA SFT; default source is Hugging Face Dolly. Beginner walkthrough: [02-how-train-py-works.md](../docs/02-how-train-py-works.md) |
+| `train.py` / `train.sbatch` | 2-node LoRA SFT; default source is Hugging Face Dolly. Beginner walkthrough: [how-train-py-works.md](../docs/task-1/how-train-py-works.md) |
 
 On the workstation, inspect Dolly with:
 

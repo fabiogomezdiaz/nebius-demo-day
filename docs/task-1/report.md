@@ -7,7 +7,7 @@
 
 This is the talk track for **task 1**: run a distributed fine-tune on Soperator, on **2×H100 / 1 GPU per node / no InfiniBand**, after changing the stock Terraform recipe so that preset works. Screenshots and log excerpts below are the evidence. Exact commands from laptop → login → `sbatch`: [Command walkthrough](#command-walkthrough-live-demo).
 
-Assignment: [00-assignment.md](00-assignment.md). Architecture: [architecture-task-1.md](architecture-task-1.md). Gotchas: [01-task-1-gotchas.md](01-task-1-gotchas.md).
+Assignment: [../overview/assignment.md](../overview/assignment.md). Architecture: [architecture.md](architecture.md). Gotchas: [gotchas.md](gotchas.md).
 
 ---
 
@@ -444,7 +444,7 @@ Slurm does **not** discover GPUs like Kubernetes. `slurmctld` reads `gres.conf`.
 | `Cores=0-15` | Controller starts, but GPU jobs sit `PD (Resources)` |
 | **`Cores=0-7`** | GPU binds (`Gres=…(S:0)`), `cuda=True` |
 
-Overlay: `terraform/infra/04-outputs.tf`. Detail: [terraform-infiniband-changes.md](terraform-infiniband-changes.md).
+Overlay: `terraform/infra/04-outputs.tf`. Detail: [terraform-infiniband.md](terraform-infiniband.md).
 
 ### 3. Platform apply would wait 240 minutes
 
@@ -482,4 +482,4 @@ If asked “would 8×H100 + IB change this?”: set a real fabric, drop `NCCL_IB
 | `workloads/train.py` | LoRA SFT |
 | `/mnt/data/nebius-demo/outputs/train-73.log` | Job 73 stdout |
 | `/mnt/data/nebius-demo/checkpoints/dolly-lora` | Adapters |
-| `docs/static/evidence/` | Console PNGs used here |
+| `docs/task-1/static/evidence/` | Console PNGs used here |

@@ -9,4 +9,4 @@ python3 presentation/generate_pptx.py
 
 Output: `presentation/Nebius-Demo-Day.pptx`.
 
-Use with [docs/demo-script.md](../docs/demo-script.md). The live cluster is the demo; the deck is the narrative.
+Use with [docs/task-1/demo-script.md](../docs/task-1/demo-script.md). The live cluster is the demo; the deck is the narrative.
