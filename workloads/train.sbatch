@@ -33,10 +33,10 @@ export HF_SPLIT="train[:1500]"
 # Leave TRAIN_DATA empty so train.py downloads Dolly into HF_HOME and caches it.
 unset TRAIN_DATA
 export OUTPUT_DIR="${PREFIX}/checkpoints/dolly-lora"
-export SEQ_LEN="2048"
-export PER_DEVICE_BATCH="4"
-export GRAD_ACCUM="4"
-export EPOCHS="1"
+export SEQ_LEN="2048"            # Maximum sequence length for training/inference
+export PER_DEVICE_BATCH="4"      # Batch size per device (GPU)
+export GRAD_ACCUM="4"            # Number of gradient accumulation steps
+export EPOCHS="1"                # Number of training epochs
 
 nodes=( $(scontrol show hostnames "$SLURM_JOB_NODELIST") )
 head_node="${nodes[0]}"
