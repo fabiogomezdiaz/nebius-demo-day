@@ -18,7 +18,8 @@ Two applies, in order. Each stack owns a different layer.
 | controller-0 | Worker | **Controller** (`slurmctld`) | `slurmctld` | — |
 | login-0 | Worker | **Login** (submit) | `sshd` | `05-login.sh` / `sbatch` |
 | worker-0 / worker-1 | Worker | **Compute** (`slurmd`) | `slurmd` + `nvidia.com/gpu` | `torchrun` LoRA |
-| *(not created)* | | **Accounting** / **NFS** | — | Assignment table includes them; this lab left both off |
+| accounting | Worker | **Accounting** (`slurmdbd`) | MariaDB + slurmdbd | — |
+| nfs | Worker | **NFS** | nfs_in_k8s | `/mnt/nfs` |
 
 Source / Eraser IDs: [diagrams/](diagrams/).
 
@@ -53,7 +54,7 @@ Overlays that exist because this is **not** the stock 8-GPU InfiniBand recipe:
 - `gpu_cluster.id = "ethernet-not-attached"` — satisfies the stock Terraform check without creating a GPU cluster (this preset cannot join one).
 - 1-GPU **GRES** (`gres.conf`: Slurm’s map of which GPU device files and CPU cores exist) — `/dev/nvidia0`, `Cores=0-7`. Stock map is 8 GPUs / `Cores=0-31` and crashes `slurmctld` on 16-CPU nodes. Thread IDs `Cores=0-15` let the controller start but drop GPUs from scheduling.
 - Preinstalled CUDA drivers on the MK8s image (`use_preinstalled_gpu_drivers = true`).
-- Accounting (hardcoded off), NFS, public o11y: off. The assignment CPU table still includes Accounting + NFS; see [00-status.md](00-status.md).
+- Accounting + NFS-in-k8s on (assignment 8-node / 64 vCPU table). `public_o11y_enabled` off.
 
 ---
 

@@ -93,8 +93,8 @@ On 8×H100 you would drop this override and use the stock 8-device map (and Infi
 | System nodeset | min 3 / max 9 | min 4 / max 4 | Cap at 32 vCPU |
 | Login | 32vcpu-128gb × 2 | 16vcpu-64gb × 1 | Capacity table |
 | Controller | 16vcpu-64gb | 4vcpu-16gb | Capacity table |
-| Accounting | 8vcpu-32gb | disabled | Not required by demo tasks |
-| NFS | 32vcpu-128gb | disabled | Demo I/O is filestore jail + `/mnt/data` |
+| Accounting | 8vcpu-32gb | 8vcpu-32gb × 1 | Assignment CPU table |
+| NFS | 32vcpu-128gb standalone or large nfs_in_k8s | 4vcpu-16gb × 1, nfs_in_k8s 128 GiB NETWORK_SSD | Assignment CPU table; not an extra NFS VM |
 | Jail | existing ID | new `spec` | Do not reuse another jail’s filesystem |
 | GRES (`gres.conf`) | 8×H100 NVLink map | 1×GPU `/dev/nvidia0` `Cores=0-7` | Stock map is 8-GPU-only; slurmctld crashes on 16 CPUs. Thread IDs `0-15` are also invalid. |
 | `node_local_image_disk` | 930 GiB IO_M3 | disabled | Enroot/Docker image disks are unused |
@@ -102,17 +102,16 @@ On 8×H100 you would drop this override and use the stock 8-device map (and Infi
 
 ## CPU nodeset budget
 
-The assignment table is **8 CPU nodes / 64 vCPU** (includes Accounting + NFS). This lab is **6 / 52** because those two node groups are disabled. GPU workers are extra either way.
+The assignment table is **8 CPU nodes / 64 vCPU** (includes Accounting + NFS). GPU workers are extra either way.
 
 | Nodeset | Platform | Preset | Count | vCPU | This lab |
 | --- | --- | --- | --- | --- | --- |
 | System | cpu-d3 | 8vcpu-32gb | 4 (fixed) | 32 | yes |
 | Login | cpu-d3 | 16vcpu-64gb | 1 | 16 | yes |
 | Controller | cpu-d3 | 4vcpu-16gb | 1 | 4 | yes |
-| Accounting | cpu-d3 | 8vcpu-32gb | 1 | 8 | **off** |
-| NFS | cpu-d3 | 4vcpu-16gb | 1 | 4 | **off** |
-| **CPU total (assignment)** | | | **8** | **64** | |
-| **CPU total (this lab)** | | | **6** | **52** | |
+| Accounting | cpu-d3 | 8vcpu-32gb | 1 | 8 | yes (apply infra + platform) |
+| NFS | cpu-d3 | 4vcpu-16gb | 1 | 4 | yes (nfs_in_k8s on that node) |
+| **CPU total** | | | **8** | **64** | |
 
 GPU workers are additional: 2 × `1gpu-16vcpu-200gb` (2 H100s, 32 vCPU). They are not in the 64 vCPU table. See [00-status.md](00-status.md).
 
