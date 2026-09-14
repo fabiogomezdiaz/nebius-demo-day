@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=helios-lora
+#SBATCH --job-name=dolly-lora
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
@@ -27,12 +27,16 @@ export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
 export BASE_MODEL="Qwen/Qwen2.5-7B-Instruct"
-export TRAIN_DATA="${PREFIX}/workloads/data/helios_faq.jsonl"
-export OUTPUT_DIR="${PREFIX}/checkpoints/helios-lora"
+export HF_DATASET="databricks/databricks-dolly-15k"
+export HF_SPLIT="train[:1500]"
+
+# Leave TRAIN_DATA empty so train.py downloads Dolly into HF_HOME and caches it.
+unset TRAIN_DATA
+export OUTPUT_DIR="${PREFIX}/checkpoints/dolly-lora"
 export SEQ_LEN="2048"
 export PER_DEVICE_BATCH="4"
 export GRAD_ACCUM="4"
-export EPOCHS="8"
+export EPOCHS="1"
 
 nodes=( $(scontrol show hostnames "$SLURM_JOB_NODELIST") )
 head_node="${nodes[0]}"
