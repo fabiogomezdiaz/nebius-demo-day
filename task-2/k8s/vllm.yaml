@@ -1,0 +1,118 @@
+# vLLM on the freed H100. Apply only after workers are scaled to 1
+# (task-2/01-gpu_mode.sh serve). Mounts the same jail submount that
+# holds job 73 adapters. Namespace is soperator so that PVC is visible.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: soperator
+  labels:
+    app: vllm
+    demo: task-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+        demo: task-2
+    spec:
+      runtimeClassName: nvidia
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        slurm.nebius.ai/nodeset-name: worker
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  slurm.nebius.ai/worker: "true"
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.10.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - --model
+            - Qwen/Qwen2.5-7B-Instruct
+            - --served-model-name
+            - qwen25-7b
+            - --enable-lora
+            - --lora-modules
+            - dolly=/mnt/data/nebius-demo/checkpoints/dolly-lora
+            - --max-lora-rank
+            - "64"
+            - --gpu-memory-utilization
+            - "0.85"
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --trust-remote-code
+          env:
+            - name: HF_HOME
+              value: /mnt/data/nebius-demo/hf_cache
+            - name: HUGGING_FACE_HUB_CACHE
+              value: /mnt/data/nebius-demo/hf_cache
+            - name: TRANSFORMERS_CACHE
+              value: /mnt/data/nebius-demo/hf_cache
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: "8"
+              memory: 64Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "12"
+              memory: 120Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /mnt/data
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jail-submount-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  namespace: soperator
+  labels:
+    app: vllm
+    demo: task-2
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

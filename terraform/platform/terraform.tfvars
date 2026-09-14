@@ -1,4 +1,4 @@
-# Seeded by ./scripts/01-seed_tfvars.sh.
+# Seeded by ./task-1/01-seed_tfvars.sh.
 kubeconfig_path = "../kubeconfig"
 
 # Path to a .pub file. Terraform reads the key and installs it on the login node.

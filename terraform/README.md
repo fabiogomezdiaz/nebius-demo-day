@@ -18,8 +18,8 @@ Soperator modules are fetched from GitHub at `soperator-v4.1.8-1`.
 Destroy **platform → infra** so Kubernetes cleanup runs while the cluster still exists. `06-destroy_platform.sh` runs `terraform destroy` and then `terraform/platform/scripts/platform_k8s_wipe.sh`, because Helm `resource-policy: keep` leaves Flux HelmReleases, namespaces, and CR finalizers that Terraform does not delete. Infra (MK8s, filestore) stays until you run `07`. Each destroy script prints a plan and waits for `yes` (no `-auto-approve`):
 
 ```bash
-./scripts/06-destroy_platform.sh
-./scripts/07-destroy_infra.sh
+./task-1/06-destroy_platform.sh
+./task-1/07-destroy_infra.sh
 ```
 
 ## infra files
@@ -52,11 +52,11 @@ Destroy **platform → infra** so Kubernetes cleanup runs while the cluster stil
 ## Apply
 
 ```bash
-./scripts/01-seed_tfvars.sh
-./scripts/02-apply_infra.sh                 # cluster + kubeconfig
-./scripts/03-apply_platform.sh              # Flux, Soperator, GPU Operator
+./task-1/01-seed_tfvars.sh
+./task-1/02-apply_infra.sh                 # cluster + kubeconfig
+./task-1/03-apply_platform.sh              # Flux, Soperator, GPU Operator
 ```
 
-SSH after platform apply: `./scripts/05-login.sh`. Sync job files with `./scripts/04-sync_task-1.sh`. Both default to `~/.ssh/id_rsa`.
+SSH after platform apply: `./task-1/05-login.sh`. Sync job files with `./task-1/04-sync.sh`. Both default to `~/.ssh/id_rsa`.
 
 InfiniBand skip: [docs/task-1/terraform-infiniband.md](../docs/task-1/terraform-infiniband.md).

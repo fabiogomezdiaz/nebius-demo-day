@@ -42,15 +42,16 @@ flowchart LR
 
 ## Runbook
 
-1. `./scripts/00-install_prereqs.sh` (Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils; skips tools already on PATH).
-2. `./scripts/01-seed_tfvars.sh` — tenant/project/region/subnet and SSH public key path into `terraform.tfvars`.
-3. `./scripts/02-apply_infra.sh` — `terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
-4. `./scripts/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator).
-5. `./scripts/04-sync_task-1.sh`
-6. `./scripts/05-login.sh` then `sinfo`.
+1. `./task-1/00-install_prereqs.sh` (Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils; skips tools already on PATH).
+2. `./task-1/01-seed_tfvars.sh` — tenant/project/region/subnet and SSH public key path into `terraform.tfvars`.
+3. `./task-1/02-apply_infra.sh` — `terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
+4. `./task-1/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator).
+5. `./task-1/04-sync.sh`
+6. `./task-1/05-login.sh` then `sinfo`.
 7. On login: `bash /mnt/data/nebius-demo/task-1/setup_env.sh`.
 8. `sbatch /mnt/data/nebius-demo/task-1/train.sbatch`.
 9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`, both GPUs busy.
+10. Extra mile (task 2): `./task-2/01-gpu_mode.sh serve` then port-forward `svc/vllm`. Flip back with `./task-2/01-gpu_mode.sh train`.
 
 Detail: [docs/task-1/training.md](docs/task-1/training.md).  
 InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/terraform-infiniband.md).
@@ -71,8 +72,8 @@ InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/te
 docs/            # overview + task-1 … task-4
 gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
-scripts/         # 00 prereqs → 04 sync → 05 login → 06–07 destroy
-task-1/          # train.sbatch / train.py / setup_env.sh
+task-1/          # 00–07 runbook, train.sbatch / train.py / setup_env.sh
+task-2/          # 01-gpu_mode.sh, vLLM Deployment
 presentation/    # PowerPoint source + generated deck
 ```
 

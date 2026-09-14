@@ -12,7 +12,7 @@ This repo treated **task 1** as Soperator distributed training. The email also l
 | 2×H100, 1 GPU per node, no InfiniBand | Preset `1gpu-16vcpu-200gb`; `gpu_cluster.id = "ethernet-not-attached"`; no Network Operator |
 | Manipulate Terraform for 1-GPU Ethernet | Infra overlay in `terraform/infra` (GRES `Cores=0-7`, sentinel GPU cluster, CPU sizes); platform in `terraform/platform` |
 | `public_o11y_enabled = false` | Hardcoded in platform |
-| `yq` on the apply host | `scripts/00-install_prereqs.sh` |
+| `yq` on the apply host | `task-1/00-install_prereqs.sh` |
 | New jail (do not share a filesystem with another jail) | New filestore jail + `/mnt/data` submount |
 | Distributed fine-tune | Job **73**: Qwen2.5-7B-Instruct LoRA SFT on Dolly `train[:1500]`, `world_size=2`, `cuda=True`, NCCL `NET/Socket` over `eth0`. Job **66** was an earlier Helios run. |
 | Checkpoint | `/mnt/data/nebius-demo/checkpoints/dolly-lora` (job 73). Older Helios adapters: `checkpoints/helios-lora`. |
@@ -38,8 +38,8 @@ The email’s CPU table is **8 nodes / 64 vCPU**, including Accounting and NFS. 
 That Accounting + NFS gap is the missing **infra**. Terraform now enables both. Apply **infra then platform** (do not skip infra — platform reads the new `soperator` output).
 
 ```bash
-./scripts/02-apply_infra.sh    # accounting filestore + 2 node groups
-./scripts/03-apply_platform.sh # slurmdbd/MariaDB + NFS-in-k8s
+./task-1/02-apply_infra.sh    # accounting filestore + 2 node groups
+./task-1/03-apply_platform.sh # slurmdbd/MariaDB + NFS-in-k8s
 ```
 
 Expect two new MK8s node groups (`accounting`, `nfs`), one 128 GiB accounting filestore, MariaDB + slurmdbd on the accounting node, and an in-cluster NFS server on the NFS node (`/mnt/nfs`, 128 GiB NETWORK_SSD). GPU workers are unchanged. The Flux overlay still skips the 240-minute activechecks hang.
@@ -58,7 +58,7 @@ GRES `Cores=0-7` also lands in platform on this apply (replacing the live kubect
 
 | Requirement | Status |
 | --- | --- |
-| Inference on the **same** MK8s cluster, **serving** the trained model | **No.** [../task-2/](../task-2/). Worker pods still hold both GPUs; a Kubernetes GPU Deployment would stay Pending. Serving has to be a Slurm job. |
+| Inference on the **same** MK8s cluster, **serving** the trained model | **Scaffolded, not applied yet.** [../task-2/](../task-2/). `./task-2/01-gpu_mode.sh serve` scales Soperator workers 2→1 (Flux-patched) and applies a vLLM Deployment on the freed H100. `train` flips back. |
 | Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** [../task-3/](../task-3/). |
 | Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no.** See [../task-4/](../task-4/) and [../task-1/report.md](../task-1/report.md). |
 

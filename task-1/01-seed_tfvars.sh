@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INFRA="${ROOT}/terraform/infra"
 PLATFORM="${ROOT}/terraform/platform"
-RETRY="${ROOT}/scripts/retry.sh"
+RETRY="${ROOT}/task-1/retry.sh"
 KUBECONFIG_REL="../kubeconfig"
 
 DEFAULT_TENANT="tenant-e00vj0jkxzwvp8q5xe"
@@ -116,4 +116,4 @@ echo "  vpc_subnet_id=${NEBIUS_VPC_SUBNET_ID}"
 echo "Seeded SSH public key path ${SSH_PUBKEY_PATH} into ${PLATFORM}/terraform.tfvars"
 echo "Seeded kubeconfig_path=${KUBECONFIG_REL}"
 echo
-echo "Next: ./scripts/02-apply_infra.sh"
+echo "Next: ./task-1/02-apply_infra.sh"

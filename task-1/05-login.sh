@@ -15,7 +15,7 @@ if [[ ! -f "${KEY}" ]]; then
 fi
 
 if [[ -z "${LOGIN_HOST}" ]]; then
-  LOGIN_HOST="$("${ROOT}/scripts/login_host.sh")"
+  LOGIN_HOST="$("${ROOT}/task-1/login_host.sh")"
 fi
 
 exec ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "${USER}@${LOGIN_HOST}"

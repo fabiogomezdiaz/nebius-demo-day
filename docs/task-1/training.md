@@ -20,7 +20,7 @@ Gotchas from this lab: [gotchas.md](gotchas.md).
 ## Prerequisites
 
 ```bash
-./scripts/00-install_prereqs.sh
+./task-1/00-install_prereqs.sh
 ```
 
 Installs Terraform, [Nebius CLI](https://docs.nebius.com/cli/quickstart), kubectl, Helm, jq, yq, and GNU coreutils. Tools already on `PATH` are left as-is.
@@ -32,7 +32,7 @@ Nebius console access for the target tenant and project. Run `nebius profile cre
 From the repository root, after `nebius profile create`:
 
 ```bash
-./scripts/01-seed_tfvars.sh
+./task-1/01-seed_tfvars.sh
 ```
 
 Writes region, tenant, project, and the default VPC subnet into `terraform/infra/terraform.tfvars`, the SSH public key **path** and kubeconfig path into `terraform/platform/terraform.tfvars`. Terraform reads the `.pub` file at apply. Override with `NEBIUS_TENANT_ID`, `NEBIUS_PROJECT_ID`, `NEBIUS_REGION`, or `SSH_PUBKEY_PATH`. Child modules are not cloned into this repository; `terraform init` fetches them from GitHub at `soperator-v4.1.8-1`.
@@ -40,12 +40,12 @@ Writes region, tenant, project, and the default VPC subnet into `terraform/infra
 ## Apply infrastructure
 
 ```bash
-./scripts/02-apply_infra.sh
+./task-1/02-apply_infra.sh
 ```
 
 MK8s creation takes several tens of minutes. This apply does **not** install Soperator.
 
-Install Flux, Soperator/Slurm, and GPU Operator with `scripts/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
+Install Flux, Soperator/Slurm, and GPU Operator with `task-1/03-apply_platform.sh` (platform Terraform and local kubeconfig). That apply waits for the Slurm cluster HelmRelease. It also waits for `soperator-activechecks`; platform overlays Flux values so the install hook does not block on Slurm jobs that never get a status write on this 1-GPU Ethernet lab.
 
 If `controller-0` is `CrashLoopBackOff` with `Invalid GRES data for gpu, Cores=0-31`, the stock 8-GPU `gres.conf` is still in play. **GRES** (Generic RESource) is Slurm’s config for which GPU devices and CPU cores exist; the stock map assumes 8 GPUs / 32 cores. Infra must emit the 1-GPU overlay (`Cores=0-7`, not thread IDs `0-15`), then re-apply platform. GPU jobs `PD (Resources)` on idle nodes is the `Cores=0-15` follow-on. See [GRES](terraform-infiniband.md#gres-gresconf) and [gotchas](gotchas.md).
 
@@ -60,8 +60,8 @@ kubectl get slurmcluster -A
 ## Sync training files onto the jail
 
 ```bash
-./scripts/04-sync_task-1.sh
-./scripts/05-login.sh
+./task-1/04-sync.sh
+./task-1/05-login.sh
 sinfo
 ```
 

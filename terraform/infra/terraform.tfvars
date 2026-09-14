@@ -5,7 +5,7 @@
 # github.com/nebius/nebius-solutions-library @ soperator-v4.1.8-1.
 # Node groups, filestore sizes, and Slurm flags are hardcoded in .tf.
 #
-# ./scripts/01-seed_tfvars.sh writes region, tenant, project, and subnet here.
+# ./task-1/01-seed_tfvars.sh writes region, tenant, project, and subnet here.
 #----------------------------------------------------------------------------------------------------------------------#
 
 company_name   = "fabio-demo"

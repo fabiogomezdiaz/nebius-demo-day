@@ -21,7 +21,7 @@ Pulled from `root@login-0:/mnt/data/nebius-demo` plus `/etc/slurm/gres.conf`.
 
 ```bash
 KEY="${SSH_PRIVATE_KEY:-$HOME/.ssh/id_rsa}"
-HOST="$(./scripts/login_host.sh)"
+HOST="$(./task-1/login_host.sh)"
 rsync -az -e "ssh -i ${KEY}" \
   "root@${HOST}:/mnt/data/nebius-demo/outputs/" \
   docs/task-1/artifacts/outputs/

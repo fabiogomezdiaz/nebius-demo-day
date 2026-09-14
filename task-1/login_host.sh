@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export KUBECONFIG="${KUBECONFIG:-${ROOT}/terraform/kubeconfig}"
 
 if [[ ! -f "${KUBECONFIG}" ]]; then
-  echo "Missing ${KUBECONFIG}. Run ./scripts/02-apply_infra.sh first." >&2
+  echo "Missing ${KUBECONFIG}. Run ./task-1/02-apply_infra.sh first." >&2
   exit 1
 fi
 

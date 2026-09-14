@@ -36,10 +36,10 @@ This environment runs **Soperator** (Slurm-on-Kubernetes) on a single Nebius Man
 
 | Kubernetes pattern | In this environment |
 | --- | --- |
-| GPU `Deployment` | `sbatch`; Slurm places the job on worker pods |
+| GPU `Deployment` | Training: `sbatch`. Serving: scale workers to 1 (`task-2/01-gpu_mode.sh serve`) then vLLM |
 | Container image with PyTorch | The **jail** (shared root) |
 | PVC for model weights | Jail plus a submount at `/mnt/data` |
 | InfiniBand NCCL | Not available on `1gpu-16vcpu-200gb`; Ethernet NCCL |
 | `nvidia-smi` in a pod | `nvidia-smi` on a worker, plus Nebius GPU dashboards |
 
-Soperator worker pods already occupy the GPUs (device plugin + taint). A second `Deployment` requesting `nvidia.com/gpu` stays `Pending`.
+Soperator worker pods occupy the GPUs (device plugin + taint). A second `Deployment` requesting `nvidia.com/gpu` stays `Pending` until workers are scaled to 1 (`task-2/01-gpu_mode.sh serve`).

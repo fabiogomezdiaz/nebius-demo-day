@@ -11,7 +11,7 @@ PLATFORM="${ROOT}/terraform/platform"
 export KUBECONFIG="${KUBECONFIG:-${ROOT}/terraform/kubeconfig}"
 
 if [[ ! -f "${PLATFORM}/terraform.tfvars" ]]; then
-  echo "Missing ${PLATFORM}/terraform.tfvars — run ./scripts/01-seed_tfvars.sh first." >&2
+  echo "Missing ${PLATFORM}/terraform.tfvars — run ./task-1/01-seed_tfvars.sh first." >&2
   exit 1
 fi
 if [[ ! -f "${KUBECONFIG}" ]]; then
@@ -19,7 +19,7 @@ if [[ ! -f "${KUBECONFIG}" ]]; then
   exit 1
 fi
 
-export NEBIUS_IAM_TOKEN="$("${ROOT}/scripts/retry.sh" -- nebius iam get-access-token)"
+export NEBIUS_IAM_TOKEN="$("${ROOT}/task-1/retry.sh" -- nebius iam get-access-token)"
 
 cd "${PLATFORM}"
 terraform init -reconfigure
@@ -37,5 +37,5 @@ export K8S_CLUSTER_CONTEXT="${K8S_CLUSTER_CONTEXT:-$(kubectl --kubeconfig "${KUB
 
 echo
 echo "Platform Kubernetes is gone. MK8s/filestore are still up."
-echo "Reinstall: ./scripts/03-apply_platform.sh"
-echo "Or destroy infra: ./scripts/07-destroy_infra.sh"
+echo "Reinstall: ./task-1/03-apply_platform.sh"
+echo "Or destroy infra: ./task-1/07-destroy_infra.sh"

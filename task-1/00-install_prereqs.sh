@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install workstation tools used by this repo. Skips anything already on PATH.
 # macOS: Homebrew. Linux: apt when available.
-# Run with bash (./scripts/00-install_prereqs.sh). zsh is fine as the login shell.
+# Run with bash (./task-1/00-install_prereqs.sh). zsh is fine as the login shell.
 set -euo pipefail
 
 # Terraform >= 1.12, Nebius CLI, kubectl, Helm, jq, mikefarah yq, GNU coreutils (md5sum).
@@ -179,4 +179,4 @@ fi
 
 echo "Prerequisites OK."
 echo "Next: nebius profile create   # if not already logged in"
-echo "Then: ./scripts/01-seed_tfvars.sh"
+echo "Then: ./task-1/01-seed_tfvars.sh"

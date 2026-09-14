@@ -108,7 +108,7 @@ Those jobs sit on partition **`hidden`**. They can leave `GresUsed` non-zero or 
 
 ## Submitting the training job
 
-Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment stays `Pending`.
+Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment stays `Pending` until workers are scaled to 1 (`task-2/01-gpu_mode.sh serve`).
 
 What actually ran (job 66): two nodes, `--gpus-per-node=1`, `--ntasks-per-node=1`, `--cpus-per-task=1`, `--mem=80G`, then `bash train.sbatch` as `--wrap`. `#SBATCH` lines inside the wrapped script are **ignored**; flags must be on the `sbatch` command (or you must `sbatch train.sbatch` without `--wrap`).
 
@@ -144,7 +144,7 @@ If it still hangs, run `ip -br addr` on a worker and set `NCCL_SOCKET_IFNAME` / 
 
 ## Training files are not in Terraform
 
-`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_task-1.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
+`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `task-1/04-sync.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
 
 Success for this lab: `world_size=2`, `cuda=True`, `n_gpu=1` **per rank** (two nodes, one H100 each), adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`. `n_gpu=2` in one process would be wrong on this SKU.
 
@@ -172,7 +172,7 @@ Soperator installs the operator and `SlurmCluster` as Flux HelmReleases. Removin
 
 Flux HelmReleases use `helm.sh/resource-policy: keep`. `terraform destroy` in platform uninstalls the Helm release object and leaves namespaces, CRDs, and finalizers. Destroy **platform → infra** so wipe still has a cluster.
 
-`06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker in `cleanup.tf` is created **first** so it is always in state even if Soperator apply hangs.
+`task-1/06-destroy_platform.sh` runs `terraform/platform/scripts/platform_k8s_wipe.sh` after destroy. The wipe marker in `cleanup.tf` is created **first** so it is always in state even if Soperator apply hangs.
 
 ## Do not reuse another cluster’s jail
 
@@ -189,7 +189,7 @@ A filestore that is already a jail for another Slurm cluster must not be attache
 | `node_local_image_disk` | 930 GiB | disabled | Enroot/Docker image disks unused |
 | System / login / controller size | large | 4+1+1 + accounting + nfs = 64 vCPU | Assignment table |
 
-`yq` must be on `PATH` during apply (`00-install_prereqs.sh`). Region for `gpu-h100-sxm` is documented as `eu-north1`.
+`yq` must be on `PATH` during apply (`task-1/00-install_prereqs.sh`). Region for `gpu-h100-sxm` is documented as `eu-north1`.
 
 ## Symptom → cause
 

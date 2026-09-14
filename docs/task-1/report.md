@@ -39,20 +39,20 @@ Completing task 1 is a pass. Keep the cluster; do not destroy it before the inte
 
 Two shells. **Laptop** = this git repo. **Login** = SSH to `login-0` (`root@login-0`). Do not run `06` / `07` in the interview; the assignment says keep the lab.
 
-All laptop commands are from the repo root (`nebius-demo-day/`). Scripts `04` and `05` default to `~/.ssh/id_rsa`.
+All laptop commands are from the repo root (`nebius-demo-day/`). Scripts `task-1/04-sync.sh` and `task-1/05-login.sh` default to `~/.ssh/id_rsa`.
 
 ### 1. Laptop — tools and Terraform inputs
 
 ```bash
 # CLI tools (Terraform, Nebius CLI, kubectl, Helm, jq, yq). Skips what is already on PATH.
-./scripts/00-install_prereqs.sh
+./task-1/00-install_prereqs.sh
 
 # One-time Nebius login if this machine has no profile yet.
 nebius profile create
 
 # Writes tenant / project / region / subnet into terraform/infra/terraform.tfvars
 # and the SSH public-key path + kubeconfig path into terraform/platform/terraform.tfvars.
-./scripts/01-seed_tfvars.sh
+./task-1/01-seed_tfvars.sh
 ```
 
 ### 2. Laptop — infra (cloud only)
@@ -61,7 +61,7 @@ nebius profile create
 # terraform init + apply in terraform/infra.
 # Creates MK8s, node groups (system, login, controller, GPU workers, …), filestore, kubeconfig.
 # Does NOT install Soperator. Tens of minutes.
-./scripts/02-apply_infra.sh
+./task-1/02-apply_infra.sh
 ```
 
 That script is `terraform init -reconfigure && terraform apply` in `terraform/infra`. It also refreshes `NEBIUS_IAM_TOKEN` and writes `terraform/kubeconfig`.
@@ -72,7 +72,7 @@ That script is `terraform init -reconfigure && terraform apply` in `terraform/in
 # terraform init + apply in terraform/platform.
 # Flux, Soperator/Slurm, NVIDIA GPU Operator (driver.enabled=false).
 # Overlay skips ActiveChecks that would hang 240 minutes on this Ethernet 1-GPU lab.
-./scripts/03-apply_platform.sh
+./task-1/03-apply_platform.sh
 ```
 
 Sanity check from the laptop (kubeconfig from infra):
@@ -94,7 +94,7 @@ Terraform does **not** put `train.py` on the cluster. Sync does:
 ```bash
 # rsync task-1/ → root@<login-ip>:/mnt/data/nebius-demo/task-1/
 # Same disk the GPU workers mount, so both ranks see the scripts.
-./scripts/04-sync_task-1.sh
+./task-1/04-sync.sh
 ```
 
 Re-run this after any local edit to `train.py` / `train.sbatch` (that is how the job-71 `SFTConfig` fix got onto the jail).
@@ -102,7 +102,7 @@ Re-run this after any local edit to `train.py` / `train.sbatch` (that is how the
 ### 5. Laptop — SSH to the login node
 
 ```bash
-./scripts/05-login.sh
+./task-1/05-login.sh
 # same as: ssh -i ~/.ssh/id_rsa root@<soperator-login-svc IP>
 ```
 
@@ -203,14 +203,14 @@ Where each command runs:
 | `02` | laptop | Cloud: MK8s + disks |
 | `03` | laptop | Operators: Slurm/Soperator |
 | `kubectl …` | laptop | Inspect K8s |
-| `04` | laptop | Copy files onto shared `/mnt/data` |
+| `task-1/04-sync.sh` | laptop | Copy files onto shared `/mnt/data` |
 | `05` | laptop → login | SSH |
 | `setup_env.sh` | login | Shared venv |
 | `sinfo` / `sbatch` / `squeue` | login | Slurm |
 | `tail` / `ls` | login | Read `/mnt/data` |
 | GPU dashboards | browser | Proof the H100s worked |
 
-Do **not** destroy (`./scripts/06-destroy_platform.sh` then `./scripts/07-destroy_infra.sh`) until after the interview.
+Do **not** destroy (`./task-1/06-destroy_platform.sh` then `./task-1/07-destroy_infra.sh`) until after the interview.
 
 ---
 
@@ -501,7 +501,7 @@ Ethernet 1-GPU lab never writes some ActiveCheck statuses. Flux overlay sets `ru
 ## How to walk this in the room
 
 1. **Constraint** — 2×1×H100, no IB, tag `4.1.8`, not `main`.
-2. **Commands** — [Command walkthrough](#command-walkthrough-live-demo): `00`→`05` on the laptop, then `sbatch` / `squeue` / `tail` on login. Cluster is already up; you can start at `05-login.sh` and only re-run `04` if files changed.
+2. **Commands** — [Command walkthrough](#command-walkthrough-live-demo): `00`→`03` and `05-login.sh` on the laptop, `task-1/04-sync.sh` if files changed, then `sbatch` / `squeue` / `tail` on login. Cluster is already up; you can start at `05-login.sh`.
 3. **Cluster picture** — architecture PNG; `sinfo` if you are on login.
 4. **Why Slurm** — workers already hold the GPUs.
 5. **GRES + sentinel cluster** — show the generated `gres.conf` line (`Cores=0-7`) vs stock 8-GPU; dump the ConfigMap if the cluster is up.
@@ -517,7 +517,7 @@ If asked “would 8×H100 + IB change this?”: set a real fabric, drop `NCCL_IB
 
 | Path | What |
 | --- | --- |
-| `scripts/00`–`05` | Prereqs → seed → infra → platform → sync → SSH |
+| `task-1/00`–`07` | Prereqs → seed → infra → platform → sync → SSH → destroy |
 | `terraform/infra` | MK8s, node groups, filestore, GRES / GPU-cluster overlay |
 | `terraform/platform` | Flux, Soperator, GPU Operator |
 | `task-1/train.sbatch` | Slurm + NCCL + `torchrun` |

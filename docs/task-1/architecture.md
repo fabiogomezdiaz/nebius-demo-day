@@ -25,9 +25,9 @@ Source / Eraser IDs: [diagrams/](diagrams/).
 
 | Stack | Script | Lives in | Owns |
 | --- | --- | --- | --- |
-| **Infra** | `02-apply_infra.sh` | `terraform/infra` | Nebius cloud only: MK8s, node groups, filestore. No Helm. |
-| **Platform** | `03-apply_platform.sh` | `terraform/platform` | Operators on that cluster: Flux, Soperator/Slurm, GPU Operator. |
-| **Training** | `04-sync` then `05-login` | `task-1/` | Files on the jail so `sbatch` can run. |
+| **Infra** | `task-1/02-apply_infra.sh` | `terraform/infra` | Nebius cloud only: MK8s, node groups, filestore. No Helm. |
+| **Platform** | `task-1/03-apply_platform.sh` | `terraform/platform` | Operators on that cluster: Flux, Soperator/Slurm, GPU Operator. |
+| **Training** | `task-1/04-sync.sh` then `task-1/05-login.sh` | `task-1/` | Files on the jail so `sbatch` can run. |
 
 Platform authenticates with the **local kubeconfig** infra writes (`terraform/kubeconfig`, gitignored). It reads infra outputs via **local remote state**.
 
@@ -75,12 +75,12 @@ GPU ownership after platform is Ready: both H100s are bound to Soperator worker 
 
 ## Training — how Task 1 actually runs
 
-Training is not a Terraform apply. `04-sync_task-1.sh` copies job files onto the jail; `05-login.sh` SSHes to the login LoadBalancer. Then you `sbatch`. The orange **WORKLOADS** band in the diagram is this path.
+Training is not a Terraform apply. `task-1/04-sync.sh` copies job files onto the jail; `task-1/05-login.sh` SSHes to the login LoadBalancer. Then you `sbatch`. The orange **WORKLOADS** band in the diagram is this path.
 
 | Piece | Role in Task 1 |
 | --- | --- |
-| `04-sync_task-1.sh` | Copies local `task-1/` onto `/mnt/data/nebius-demo/task-1/`. |
-| `05-login.sh` | SSH to the login LoadBalancer (`soperator-login-svc`). |
+| `task-1/04-sync.sh` | Copies local `task-1/` onto `/mnt/data/nebius-demo/task-1/`. |
+| `task-1/05-login.sh` | SSH to the login LoadBalancer (`soperator-login-svc`). |
 | `setup_env.sh` | Creates a shared venv on the jail so both ranks see the same Python. |
 | `train.sbatch` / `train.py` | The actual Task 1 job. |
 
@@ -106,4 +106,4 @@ Success looks like `world_size=2`, decreasing loss, and adapter files on the sha
 
 ## End-to-end
 
-Scripts for this path: `00` prereqs → `01` seed → `02` infra → `03` platform → `04-sync` → `05-login` / `sinfo` → `setup_env.sh` → `sbatch train.sbatch`.
+Scripts for this path: `task-1/00` prereqs → `01` seed → `02` infra → `03` platform → `04-sync.sh` → `05-login` / `sinfo` → `setup_env.sh` → `sbatch train.sbatch`.
