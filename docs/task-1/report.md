@@ -436,15 +436,57 @@ Stock recipe = 8-GPU NVLink node + InfiniBand GPU cluster. This preset cannot jo
 
 ### 2. GRES (Slurm’s GPU map)
 
-Slurm does **not** discover GPUs like Kubernetes. `slurmctld` reads `gres.conf`. Stock map is 8×H100 (`Cores=0-31`). These nodes are 1 GPU / 16 logical CPUs (`S:C:T = 1:8:2`).
+There is **no `gres.conf` in this git repo**. Slurm does not probe GPUs. `slurmctld` only believes that file. Soperator **generates** it from Terraform `worker_nodesets[].gres_config`, then Flux puts it in ConfigMap `soperator/soperator-slurm-configs` (key `gres.conf`) and mounts it on the controller.
+
+The generator is `terraform/infra/04-outputs.tf`. For this 1-GPU preset it emits **one line** (`worker_gres_last_core` = 8 cores − 1 = 7):
+
+```122:128:terraform/infra/04-outputs.tf
+      gres_config = [
+        format(
+          "AutoDetect=off Name=gpu Type=%s File=/dev/nvidia0 Cores=0-%d Links=-1 Flags=nvidia_gpu_env",
+          lookup(module.resources.gres_name_by_platform, local.worker.resource.platform, "gpu"),
+          local.worker_gres_last_core,
+        )
+      ]
+```
+
+That becomes this `gres.conf` on the cluster (ConfigMap dump, 2026-09-14):
+
+```text
+#Gres config
+AutoDetect=nvidia
+#Nodes section
+#NodeSet worker:
+NodeName=worker-[0-1] AutoDetect=off Name=gpu Type=nvidia_h100_80gb_hbm3 File=/dev/nvidia0 Cores=0-7 Links=-1 Flags=nvidia_gpu_env
+```
+
+Terraform only supplies the `Name=gpu … Cores=0-7` piece. Soperator wraps it with `NodeName=worker-[0-1]` and a header. The file is **not** a Kubernetes volumeMount of that ConfigMap. Soperator writes it onto the **jail**, which every Slurm pod mounts:
+
+| Path | What |
+| --- | --- |
+| ConfigMap `soperator/soperator-slurm-configs` key `gres.conf` | Source Flux/Helm renders |
+| `/mnt/jail/etc/slurm/gres.conf` | Real file (jail filestore) |
+| `/etc/slurm` → `/mnt/jail/etc/slurm` | Symlink in the `slurmctld` / `slurmd` containers |
+
+`slurmctld` on `controller-0` and `slurmd` on `worker-0` / `worker-1` all see the same jail file. `slurm.conf` next to it has `GresTypes=gpu` and `Gres=gpu:nvidia_h100_80gb_hbm3:1` on each worker line.
+
+Stock `gres_config_by_platform["gpu-h100-sxm"]` is an **8-GPU NVLink** map (`/dev/nvidia0`–`7`, `Cores=0-31` / `32-63`). `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`. `gres.conf` did not. These nodes are 1 GPU / 16 logical CPUs (`S:C:T = 1:8:2`).
 
 | Map | Result |
 | --- | --- |
-| `Cores=0-31` | `slurmctld` CrashLoop: invalid GRES, only 16 CPUs |
-| `Cores=0-15` | Controller starts, but GPU jobs sit `PD (Resources)` |
-| **`Cores=0-7`** | GPU binds (`Gres=…(S:0)`), `cuda=True` |
+| `Cores=0-31` (stock) | `slurmctld` CrashLoop: invalid GRES, only 16 CPUs |
+| `Cores=0-15` (thread IDs) | Controller starts, but GPU jobs sit `PD (Resources)` |
+| **`Cores=0-7`** (this overlay) | GPU binds (`Gres=…(S:0)`), `cuda=True` |
 
-Overlay: `terraform/infra/04-outputs.tf`. Detail: [terraform-infiniband.md](terraform-infiniband.md).
+Dump the live file from the laptop (kubeconfig from infra):
+
+```bash
+export KUBECONFIG="$PWD/terraform/kubeconfig"
+kubectl -n soperator get cm soperator-slurm-configs \
+  -o jsonpath='{.data.gres\.conf}{"\n"}'
+```
+
+Detail: [terraform-infiniband.md](terraform-infiniband.md#gres-gresconf).
 
 ### 3. Platform apply would wait 240 minutes
 
@@ -462,7 +504,7 @@ Ethernet 1-GPU lab never writes some ActiveCheck statuses. Flux overlay sets `ru
 2. **Commands** — [Command walkthrough](#command-walkthrough-live-demo): `00`→`05` on the laptop, then `sbatch` / `squeue` / `tail` on login. Cluster is already up; you can start at `05-login.sh` and only re-run `04` if files changed.
 3. **Cluster picture** — architecture PNG; `sinfo` if you are on login.
 4. **Why Slurm** — workers already hold the GPUs.
-5. **GRES + sentinel cluster** — the two overlays that made the recipe work.
+5. **GRES + sentinel cluster** — show the generated `gres.conf` line (`Cores=0-7`) vs stock 8-GPU; dump the ConfigMap if the cluster is up.
 6. **Job 73 log** — `world_size=2`, `NET/Socket`, loss 2.25 → 1.71, `saved LoRA adapters`.
 7. **Dashboards** — 100% util / 50 GB FB vs job 71’s 2 MB. NVLink = 0 on purpose.
 8. **Honest extras** — inference, base-vs-LoRA compare, and a *sustained* 80% HBM fill are not done. Compute 80% **was** hit.
