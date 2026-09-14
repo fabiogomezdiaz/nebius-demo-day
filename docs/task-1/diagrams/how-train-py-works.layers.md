@@ -1,6 +1,6 @@
 # How train.py works — Eraser freeform
 
-Beginner flowchart of `workloads/train.py`. IDs: [`eraser-ids.json`](eraser-ids.json). PNG: [`../static/how-train-py-works.png`](../static/how-train-py-works.png). Canvas: [How train.py works](https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas).
+Beginner flowchart of `task-1/train.py`. IDs: [`eraser-ids.json`](eraser-ids.json). PNG: [`../static/how-train-py-works.png`](../static/how-train-py-works.png). Canvas: [How train.py works](https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas).
 
 Left swimlane: two processes, one GPU each (rank 0 / rank 1). Main column is numbered 0–10.
 
@@ -9,9 +9,7 @@ Left swimlane: two processes, one GPU each (rank 0 / rank 1). Main column is num
 1  gray   parse args / env; print cuda=True
 2  blue   load tokenizer
 3  blue   load frozen Qwen 7B
-4  orange diamond: TRAIN_DATA set?
-         YES → local JSONL (skip 5) → 6
-         NO  → Hugging Face Dolly train[:1500]
+4  orange load Hugging Face Dolly train[:1500]
 5  orange map Dolly → chat messages
 6  orange apply Qwen chat template → text
 7  blue   attach LoRA adapters (sticky notes)

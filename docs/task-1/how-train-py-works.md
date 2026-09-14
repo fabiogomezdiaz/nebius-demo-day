@@ -1,6 +1,6 @@
 # How `train.py` works (beginner)
 
-`workloads/train.py` is the Python that actually fine-tunes the model. It does **not** start the cluster, allocate GPUs, or talk to Kubernetes. Slurm already did that. This file is the recipe one GPU process follows.
+`task-1/train.py` is the Python that actually fine-tunes the model. It does **not** start the cluster, allocate GPUs, or talk to Kubernetes. Slurm already did that. This file is the recipe one GPU process follows.
 
 Eraser canvas: [How train.py works](https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas). Cluster-level sequence (sbatch → torchrun): [architecture.md](architecture.md).
 
@@ -24,7 +24,7 @@ Two copies of this script run at the same time:
 | Import | Job |
 | --- | --- |
 | `transformers` | Load the tokenizer and the 7B Qwen weights |
-| `datasets` | Download Dolly (or a JSONL) and map rows |
+| `datasets` | Download Dolly from Hugging Face and map rows |
 | `peft` | Attach LoRA adapters; freeze the base model |
 | `trl.SFTTrainer` | The training loop (supervised fine-tuning) |
 | `torch` | GPU tensors; `torchrun` already set up DDP |
@@ -37,7 +37,7 @@ Two copies of this script run at the same time:
 
 ### 1. Read knobs and prove the GPU is there
 
-```32:35:workloads/train.py
+```29:32:task-1/train.py
     parser.add_argument("--hf-dataset", default=os.environ.get("HF_DATASET", "databricks/databricks-dolly-15k"))
     parser.add_argument("--hf-split", default=os.environ.get("HF_SPLIT", "train[:1500]"))
     parser.add_argument("--epochs", type=float, default=float(os.environ.get("EPOCHS", "1")))
@@ -52,13 +52,14 @@ A **tokenizer** is a dictionary: text in, integer IDs out. The model never sees 
 
 ### 3. Load the frozen 7B model
 
-```86:92:workloads/train.py
+```80:87:task-1/train.py
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
         torch_dtype=torch.bfloat16,
-        attn_implementation="sdpa",
+        attn_implementation="sdpa",  # Faster attention
         trust_remote_code=True,
     )
+    # Turning off caching can save some memory during training
     model.config.use_cache = False
 ```
 
@@ -66,20 +67,18 @@ A **tokenizer** is a dictionary: text in, integer IDs out. The model never sees 
 
 These weights stay frozen. LoRA (step 7) is what actually learns.
 
-### 4. Load the dataset
+### 4. Load Dolly
 
-```60:70:workloads/train.py
+```54:59:task-1/train.py
 def load_sft_dataset(args: argparse.Namespace):
-    if args.data:
-        print(f"dataset=json data_files={args.data}")
-        return load_dataset("json", data_files=args.data, split="train")
-
+    # Always load Dolly from Hugging Face; cache under HF_HOME.
     cache_dir = os.environ.get("HF_HOME")
     print(f"dataset={args.hf_dataset} split={args.hf_split} hf_home={cache_dir}")
     ds = load_dataset(args.hf_dataset, split=args.hf_split)
+    return ds.map(dolly_to_messages, remove_columns=ds.column_names)
 ```
 
-Default: Hugging Face `databricks/databricks-dolly-15k`, first 1,500 rows. Cached under `HF_HOME`. If you set `TRAIN_DATA` to a JSONL that already has a `messages` column (the old Helios FAQ), that file is used instead and step 5 is skipped.
+Always Hugging Face `databricks/databricks-dolly-15k`, first 1,500 rows (`HF_SPLIT=train[:1500]`). Cached under `HF_HOME`. There is no local JSONL path.
 
 ### 5. Turn Dolly into chat messages
 
@@ -90,7 +89,7 @@ user:      instruction + optional context
 assistant: response
 ```
 
-```47:57:workloads/train.py
+```41:52:task-1/train.py
 def dolly_to_messages(example: dict) -> dict:
     instruction = (example.get("instruction") or "").strip()
     context = (example.get("context") or "").strip()
@@ -112,7 +111,7 @@ Each model family wraps messages in special tokens (`<|im_start|>user`, and so o
 
 ### 7. Attach LoRA (the sticky notes)
 
-```107:114:workloads/train.py
+```105:113:task-1/train.py
     lora = LoraConfig(
         r=args.lora_r,
         lora_alpha=args.lora_alpha,
@@ -153,10 +152,10 @@ That is the only place the two processes must communicate.
 
 ### 10. Rank 0 saves
 
-```149:153:workloads/train.py
+```150:154:task-1/train.py
     if local_rank == 0:
         Path(args.output).mkdir(parents=True, exist_ok=True)
-        trainer.save_model(args.output)
+        trainer.save_model(args.output)  # Only saves the tiny LoRA (Low-Rank Adaptation) adapters
         tokenizer.save_pretrained(args.output)
 ```
 
@@ -168,11 +167,3 @@ Both ranks have the same adapters. Only rank 0 writes `/mnt/data/nebius-demo/che
 - `dataset=databricks/databricks-dolly-15k split=train[:1500]`
 - loss printed every step, trending down
 - `saved LoRA adapters to /mnt/data/nebius-demo/checkpoints/dolly-lora`
-
-## Optional: train Helios instead
-
-```bash
-export TRAIN_DATA=/mnt/data/nebius-demo/workloads/data/helios_faq.jsonl
-```
-
-That takes the YES branch at step 4. Leave it unset for Dolly.
