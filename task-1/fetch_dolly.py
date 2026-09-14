@@ -2,7 +2,7 @@
 """Download Databricks Dolly-15k onto this machine so you can inspect it.
 
 Writes:
-  - Hugging Face cache under HF_HOME (default: workloads/hf_cache)
+  - Hugging Face cache under HF_HOME (default: task-1/hf_cache)
   - A short JSONL preview you can open in an editor
 """
 

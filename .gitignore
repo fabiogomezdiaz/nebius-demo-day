@@ -53,11 +53,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# Workload outputs
-workloads/outputs/
-workloads/checkpoints/
-workloads/hf_cache/
-workloads/models/
+# Local training caches (cluster I/O lives on /mnt/data)
+task-1/outputs/
+task-1/checkpoints/
+task-1/hf_cache/
+task-1/models/
 
 # OS / editor
 .DS_Store

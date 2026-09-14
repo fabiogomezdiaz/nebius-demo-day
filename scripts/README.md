@@ -6,7 +6,7 @@
 | 01 | `01-seed_tfvars.sh` | Write tenant, project, region, subnet, kubeconfig path, and SSH pubkey path into `terraform.tfvars` |
 | 02 | `02-apply_infra.sh` | `terraform init && terraform apply` in `terraform/infra` |
 | 03 | `03-apply_platform.sh` | Apply `platform` (Flux + Soperator + GPU Operator) |
-| 04 | `04-sync_workloads.sh` | Copy `workloads/` onto the jail (`/mnt/data`) |
+| 04 | `04-sync_task-1.sh` | Copy `task-1/` onto the jail (`/mnt/data`) |
 | 05 | `05-login.sh` | SSH to the Slurm login node |
 | 06 | `06-destroy_platform.sh` | `terraform destroy` in `terraform/platform`, then wipe Flux/Soperator leftovers on the cluster (plan + yes). Does not destroy MK8s. |
 | 07 | `07-destroy_infra.sh` | `terraform destroy` in `terraform/infra` (plan + yes) |

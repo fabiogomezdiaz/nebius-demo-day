@@ -11,7 +11,7 @@ Two applies, in order. Each stack owns a different layer.
 
 **How to read it.** Infra is filestore + MK8s. The four system workers are one column (`system 0-3`) with Flux, Soperator, and GPU Operator stacked. `kube-system` is omitted — that is MK8s control-plane, not something we install. The purple **PLATFORM** overlay spans `controller-0` … `worker-1`. The orange **WORKLOADS** overlay spans `login-0` + `worker-0` + `worker-1`. Jail CSI mounts on the Slurm pods (`slurmctld`, `sshd`, `slurmd`); `/mnt/data` on `05-login.sh` / `torchrun`; controller spool on `slurmctld` only. `controller-0` is Slurm’s scheduler, not a Kubernetes master.
 
-| Node | Kubernetes | Slurm | Platform on that node | Workloads on that node |
+| Node | Kubernetes | Slurm | Platform on that node | Training on that node |
 | --- | --- | --- | --- | --- |
 | *(not pictured)* control plane | **Master** | — | — | — |
 | system 0-3 | Worker | — | Flux, Soperator operator, GPU Operator | — |
@@ -27,7 +27,7 @@ Source / Eraser IDs: [diagrams/](diagrams/).
 | --- | --- | --- | --- |
 | **Infra** | `02-apply_infra.sh` | `terraform/infra` | Nebius cloud only: MK8s, node groups, filestore. No Helm. |
 | **Platform** | `03-apply_platform.sh` | `terraform/platform` | Operators on that cluster: Flux, Soperator/Slurm, GPU Operator. |
-| **Workloads** | `04-sync` then `05-login` | `workloads/` | Files on the jail so `sbatch` can run. |
+| **Training** | `04-sync` then `05-login` | `task-1/` | Files on the jail so `sbatch` can run. |
 
 Platform authenticates with the **local kubeconfig** infra writes (`terraform/kubeconfig`, gitignored). It reads infra outputs via **local remote state**.
 
@@ -73,13 +73,13 @@ GPU ownership after platform is Ready: both H100s are bound to Soperator worker 
 
 ---
 
-## Workloads — how Task 1 actually runs
+## Training — how Task 1 actually runs
 
-Training is not a Terraform apply. `04-sync_workloads.sh` copies job files onto the jail; `05-login.sh` SSHes to the login LoadBalancer. Then you `sbatch`. The orange **WORKLOADS** band in the diagram is this path.
+Training is not a Terraform apply. `04-sync_task-1.sh` copies job files onto the jail; `05-login.sh` SSHes to the login LoadBalancer. Then you `sbatch`. The orange **WORKLOADS** band in the diagram is this path.
 
 | Piece | Role in Task 1 |
 | --- | --- |
-| `04-sync_workloads.sh` | Copies local `workloads/` onto `/mnt/data/nebius-demo/workloads/`. |
+| `04-sync_task-1.sh` | Copies local `task-1/` onto `/mnt/data/nebius-demo/task-1/`. |
 | `05-login.sh` | SSH to the login LoadBalancer (`soperator-login-svc`). |
 | `setup_env.sh` | Creates a shared venv on the jail so both ranks see the same Python. |
 | `train.sbatch` / `train.py` | The actual Task 1 job. |

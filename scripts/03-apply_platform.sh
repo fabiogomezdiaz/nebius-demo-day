@@ -25,5 +25,5 @@ terraform apply "$@"
 cd "${ROOT}"
 
 echo
-echo "Next: ./scripts/04-sync_workloads.sh"
+echo "Next: ./scripts/04-sync_task-1.sh"
 echo "Then: ./scripts/05-login.sh"

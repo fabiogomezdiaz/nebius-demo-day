@@ -92,9 +92,9 @@ Workers for training are the GPU nodes. Login SSH goes through LoadBalancer `sop
 Terraform does **not** put `train.py` on the cluster. Sync does:
 
 ```bash
-# rsync workloads/ → root@<login-ip>:/mnt/data/nebius-demo/workloads/
+# rsync task-1/ → root@<login-ip>:/mnt/data/nebius-demo/task-1/
 # Same disk the GPU workers mount, so both ranks see the scripts.
-./scripts/04-sync_workloads.sh
+./scripts/04-sync_task-1.sh
 ```
 
 Re-run this after any local edit to `train.py` / `train.sbatch` (that is how the job-71 `SFTConfig` fix got onto the jail).
@@ -114,7 +114,7 @@ Prompt becomes `root@login-0`. Everything below is **on login**, not on the lapt
 # venv on /mnt/data so worker-0 and worker-1 share the same interpreter.
 # Not /tmp — that is local to one node.
 cd /mnt/data/nebius-demo
-bash workloads/setup_env.sh
+bash task-1/setup_env.sh
 ```
 
 ### 7. Login — is Slurm up?
@@ -133,7 +133,7 @@ mkdir -p /mnt/data/nebius-demo/outputs
 
 # Queue the script. Does not run it on login. Prints: Submitted batch job <id>
 # Do NOT use sbatch --wrap here; #SBATCH lines inside the file would be ignored.
-sbatch /mnt/data/nebius-demo/workloads/train.sbatch
+sbatch /mnt/data/nebius-demo/task-1/train.sbatch
 
 # Snapshot of the queue. R = running, PD = waiting. Empty = nothing current.
 squeue
@@ -478,8 +478,8 @@ If asked “would 8×H100 + IB change this?”: set a real fabric, drop `NCCL_IB
 | `scripts/00`–`05` | Prereqs → seed → infra → platform → sync → SSH |
 | `terraform/infra` | MK8s, node groups, filestore, GRES / GPU-cluster overlay |
 | `terraform/platform` | Flux, Soperator, GPU Operator |
-| `workloads/train.sbatch` | Slurm + NCCL + `torchrun` |
-| `workloads/train.py` | LoRA SFT |
+| `task-1/train.sbatch` | Slurm + NCCL + `torchrun` |
+| `task-1/train.py` | LoRA SFT |
 | `/mnt/data/nebius-demo/outputs/train-73.log` | Job 73 stdout |
 | `/mnt/data/nebius-demo/checkpoints/dolly-lora` | Adapters |
 | `docs/task-1/static/evidence/` | Console PNGs used here |

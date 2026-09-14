@@ -144,7 +144,7 @@ If it still hangs, run `ip -br addr` on a worker and set `NCCL_SOCKET_IFNAME` / 
 
 ## Training files are not in Terraform
 
-`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_workloads.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
+`train.py` / `train.sbatch` / the dataset get onto `/mnt/data` with `04-sync_task-1.sh`. SSH with `05-login.sh` (default key `~/.ssh/id_rsa`). Install Python into `/mnt/data` (or jail root), not node-local `/tmp`, or rank 1 will not see the env.
 
 Success for this lab: `world_size=2`, `cuda=True`, `n_gpu=1` **per rank** (two nodes, one H100 each), adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`. `n_gpu=2` in one process would be wrong on this SKU.
 

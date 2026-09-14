@@ -57,6 +57,6 @@ Destroy **platform → infra** so Kubernetes cleanup runs while the cluster stil
 ./scripts/03-apply_platform.sh              # Flux, Soperator, GPU Operator
 ```
 
-SSH after platform apply: `./scripts/05-login.sh`. Sync job files with `./scripts/04-sync_workloads.sh`. Both default to `~/.ssh/id_rsa`.
+SSH after platform apply: `./scripts/05-login.sh`. Sync job files with `./scripts/04-sync_task-1.sh`. Both default to `~/.ssh/id_rsa`.
 
 InfiniBand skip: [docs/task-1/terraform-infiniband.md](../docs/task-1/terraform-infiniband.md).

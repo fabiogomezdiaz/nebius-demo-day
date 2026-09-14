@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 PREFIX="${PREFIX:-/mnt/data/nebius-demo}"
 ENV_DIR="${PREFIX}/venv"
 
-mkdir -p "${PREFIX}/outputs" "${PREFIX}/checkpoints" "${PREFIX}/hf_cache" "${PREFIX}/workloads"
+mkdir -p "${PREFIX}/outputs" "${PREFIX}/checkpoints" "${PREFIX}/hf_cache" "${PREFIX}/task-1"
 
 if [[ ! -x "${ENV_DIR}/bin/python" ]]; then
   python3 -m venv "${ENV_DIR}"

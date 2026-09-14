@@ -57,10 +57,10 @@ kubectl get pods -A
 kubectl get slurmcluster -A
 ```
 
-## Sync workloads onto the jail
+## Sync training files onto the jail
 
 ```bash
-./scripts/04-sync_workloads.sh
+./scripts/04-sync_task-1.sh
 ./scripts/05-login.sh
 sinfo
 ```
@@ -69,7 +69,7 @@ Workers are ready when Slurm workers are `Idle`. Then on the login node:
 
 ```bash
 cd /mnt/data/nebius-demo
-bash workloads/setup_env.sh
+bash task-1/setup_env.sh
 ```
 
 That creates a Python environment on the shared jail so both workers see the same interpreter.
@@ -77,7 +77,7 @@ That creates a Python environment on the shared jail so both workers see the sam
 ## Submit distributed training
 
 ```bash
-sbatch workloads/train.sbatch
+sbatch task-1/train.sbatch
 squeue
 tail -f /mnt/data/nebius-demo/outputs/train-<jobid>.log
 ```

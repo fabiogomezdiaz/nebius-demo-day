@@ -1,6 +1,6 @@
 # Architecture
 
-Task 1 stack diagrams (infra / platform / workloads): [../task-1/architecture.md](../task-1/architecture.md). Assignment: [assignment.md](assignment.md). Status: [status.md](status.md).
+Task 1 stack diagrams (infra / platform / training): [../task-1/architecture.md](../task-1/architecture.md). Assignment: [assignment.md](assignment.md). Status: [status.md](status.md).
 
 Soperator is Slurm-on-Kubernetes. Cloud resources (MK8s, node groups, filestore) come from the official [solutions library](https://github.com/nebius/nebius-solutions-library) recipe in `terraform/infra`. Operators (Flux, Soperator, NVIDIA GPU Operator) live in `terraform/platform`. SSH and file sync are shell scripts in `scripts/`. Platform authenticates with a local `terraform/kubeconfig` (not stored in Vault). Training is a Slurm job.
 

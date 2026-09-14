@@ -9,7 +9,7 @@ Talk track: [report.md](report.md) (job 73 logs + GPU screenshots).
 | [report.md](report.md) | Presentation write-up |
 | [training.md](training.md) | Runbook (`00` → `sbatch`) |
 | [gotchas.md](gotchas.md) | GRES, NCCL, sbatch failures |
-| [architecture.md](architecture.md) | Infra / platform / workloads diagram |
+| [architecture.md](architecture.md) | Infra / platform / training diagram |
 | [how-train-py-works.md](how-train-py-works.md) | What `train.py` does |
 | [demo-script.md](demo-script.md) | Live demo narrative |
 | [terraform-infiniband.md](terraform-infiniband.md) | 1-GPU Ethernet Terraform overlay |

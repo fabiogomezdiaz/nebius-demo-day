@@ -277,7 +277,7 @@ def build() -> None:
         "Confirm region has gpu-h100-sxm (docs: eu-north1).",
         "SSH public key path in terraform.tfvars, then bootstrap + apply.",
         "Task 1 is the pass: two-node LoRA SFT on Soperator.",
-        "Repo: docs, Terraform overlay, workloads, and this deck.",
+        "Repo: docs, Terraform overlay, task-1 training, and this deck.",
     ], size=18)
     add_footer(s, prs, 10, total)
 

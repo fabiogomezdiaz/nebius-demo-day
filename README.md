@@ -19,7 +19,7 @@ Task 1 gotchas: [docs/task-1/gotchas.md](docs/task-1/gotchas.md).
 | --- | --- | --- |
 | Cluster + Slurm | `soperator/` Terraform via `git::` | tfvars: 1gpu preset, sentinel `gpu_cluster.id`, CPU table |
 | GPU Operator | Marketplace OCI chart | Helm in `terraform/platform`, `driver.enabled=false` |
-| Training | Slurm on that cluster | `workloads/train.sbatch` |
+| Training | Slurm on that cluster | `task-1/train.sbatch` |
 
 ```mermaid
 flowchart LR
@@ -46,11 +46,11 @@ flowchart LR
 2. `./scripts/01-seed_tfvars.sh` — tenant/project/region/subnet and SSH public key path into `terraform.tfvars`.
 3. `./scripts/02-apply_infra.sh` — `terraform init && terraform apply` in `terraform/infra`. Writes `terraform/kubeconfig`.
 4. `./scripts/03-apply_platform.sh` — platform (Flux, Soperator, GPU Operator).
-5. `./scripts/04-sync_workloads.sh`
+5. `./scripts/04-sync_task-1.sh`
 6. `./scripts/05-login.sh` then `sinfo`.
-7. On login: `bash /mnt/data/nebius-demo/workloads/setup_env.sh`.
-8. `sbatch /mnt/data/nebius-demo/workloads/train.sbatch`.
-9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/helios-lora`, both GPUs busy.
+7. On login: `bash /mnt/data/nebius-demo/task-1/setup_env.sh`.
+8. `sbatch /mnt/data/nebius-demo/task-1/train.sbatch`.
+9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`, both GPUs busy.
 
 Detail: [docs/task-1/training.md](docs/task-1/training.md).  
 InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/terraform-infiniband.md).
@@ -72,7 +72,7 @@ docs/            # overview + task-1 … task-4
 gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 scripts/         # 00 prereqs → 04 sync → 05 login → 06–07 destroy
-workloads/       # train.sbatch / train.py / setup_env.sh
+task-1/          # train.sbatch / train.py / setup_env.sh
 presentation/    # PowerPoint source + generated deck
 ```
 

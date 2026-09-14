@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copy workloads/ onto the Slurm login node under /mnt/data.
+# Copy task-1/ onto the Slurm login node under /mnt/data.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,9 +17,9 @@ if [[ -z "${LOGIN_HOST}" ]]; then
   LOGIN_HOST="$("${ROOT}/scripts/login_host.sh")"
 fi
 
-echo "Syncing workloads to root@${LOGIN_HOST}:/mnt/data/nebius-demo"
+echo "Syncing task-1 to root@${LOGIN_HOST}:/mnt/data/nebius-demo"
 ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "root@${LOGIN_HOST}" "mkdir -p /mnt/data/nebius-demo"
 rsync -az -e "ssh -i ${KEY}" \
-  "${ROOT}/workloads/" "root@${LOGIN_HOST}:/mnt/data/nebius-demo/workloads/"
+  "${ROOT}/task-1/" "root@${LOGIN_HOST}:/mnt/data/nebius-demo/task-1/"
 echo "Done. SSH in with: ./scripts/05-login.sh"
-echo "Then: bash /mnt/data/nebius-demo/workloads/setup_env.sh"
+echo "Then: bash /mnt/data/nebius-demo/task-1/setup_env.sh"
