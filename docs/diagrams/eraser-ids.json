@@ -17,5 +17,15 @@
     "diagramUrl": "https://app.eraser.io/workspace/sMTFzEg0NEXUxYUbYetV?diagram=1ZG1AC1pKv2-lFeKximp&layout=canvas",
     "png": "../static/task-1-training-flow.png",
     "source": "task-1-training-flow.eraser"
+  },
+  "train_py": {
+    "title": "Nebius Demo Day — How train.py works",
+    "fileId": "WhfhqNvtzQqdMDHNmSNk",
+    "diagramId": "FRx91CaBWFE7llagz8xQ",
+    "diagramType": "freeform-diagram",
+    "fileUrl": "https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk",
+    "diagramUrl": "https://app.eraser.io/workspace/WhfhqNvtzQqdMDHNmSNk?diagram=FRx91CaBWFE7llagz8xQ&layout=canvas",
+    "png": "../static/how-train-py-works.png",
+    "source": "how-train-py-works.layers.md"
   }
 }
