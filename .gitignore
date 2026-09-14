@@ -59,6 +59,10 @@ task-1/checkpoints/
 task-1/hf_cache/
 task-1/models/
 
+# Downloaded jail copies (keep artifacts/README.md and gres.conf)
+docs/task-1/artifacts/outputs/
+docs/task-1/artifacts/checkpoints/
+
 # OS / editor
 .DS_Store
 .idea/
