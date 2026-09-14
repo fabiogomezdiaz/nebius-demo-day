@@ -37,21 +37,9 @@ module "slurm" {
   # --- Storage & filesystems ---
   controller_state_on_filestore = false
   filestores                    = local.soperator.filestores
-  nfs = {
-    enabled    = false
-    path       = null
-    host       = null
-    mount_path = null
-  }
-  nfs_in_k8s = {
-    enabled         = false
-    version         = null
-    use_stable_repo = true
-    size_gibibytes  = null
-    storage_class   = null
-    threads         = null
-  }
-  nfs_node_group_enabled = false
+  nfs                           = local.soperator.nfs
+  nfs_in_k8s                    = local.soperator.nfs_in_k8s
+  nfs_node_group_enabled        = local.soperator.nfs_node_group_enabled
 
   # --- Security & access ---
   login_allocation_id   = local.soperator.login_allocation_id
@@ -91,7 +79,7 @@ module "slurm" {
   slurmdbd_config             = {}
 
   # --- Monitoring, reporting, and integrations ---
-  accounting_enabled  = false
+  accounting_enabled  = local.soperator.accounting_enabled
   active_checks_scope = "essential"
   exporter_enabled    = true
   public_o11y_enabled = false

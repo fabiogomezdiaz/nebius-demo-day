@@ -57,8 +57,18 @@ locals {
           -module.resources.k8s_ephemeral_storage_reserve.gibibytes
         )
       }
-      accounting = null
-      nfs        = null
+      accounting = {
+        cpu_cores        = local.resources.accounting.cpu_cores
+        memory_gibibytes = floor(local.resources.accounting.memory_gibibytes)
+        ephemeral_storage_gibibytes = floor(
+          local.node_group_accounting.boot_disk.size_gibibytes * module.resources.k8s_ephemeral_storage_coefficient
+          -module.resources.k8s_ephemeral_storage_reserve.gibibytes
+        )
+      }
+      nfs = {
+        cpu_cores        = local.resources.nfs.cpu_cores
+        memory_gibibytes = floor(local.resources.nfs.memory_gibibytes)
+      }
     }
     filestores = {
       controller_spool = {
@@ -75,7 +85,26 @@ locals {
         device         = module.filestore.jail_submounts[submount.name].mount_tag
         mount_path     = submount.mount_path
       }]
-      accounting = null
+      accounting = {
+        size_gibibytes = module.filestore.accounting.size_gibibytes
+        device         = module.filestore.accounting.mount_tag
+      }
+    }
+    accounting_enabled     = true
+    nfs_node_group_enabled = true
+    nfs = {
+      enabled    = false
+      path       = null
+      host       = null
+      mount_path = null
+    }
+    nfs_in_k8s = {
+      enabled         = true
+      version         = "1.2.0"
+      use_stable_repo = true
+      size_gibibytes  = 128
+      storage_class   = "compute-csi-network-ssd-ext4"
+      threads         = 4
     }
     login_on_worker_nodes = false
     worker_nodesets = [{

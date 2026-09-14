@@ -10,6 +10,8 @@ locals {
     controller = module.resources.by_platform[local.node_group_controller.resource.platform][local.node_group_controller.resource.preset]
     worker     = module.resources.by_platform[local.worker.resource.platform][local.worker.resource.preset]
     login      = module.resources.by_platform[local.node_group_login.resource.platform][local.node_group_login.resource.preset]
+    accounting = module.resources.by_platform[local.node_group_accounting.resource.platform][local.node_group_accounting.resource.preset]
+    nfs        = module.resources.by_platform[local.node_group_nfs.resource.platform][local.node_group_nfs.resource.preset]
   }
 
   filestore_jail_submounts = [{

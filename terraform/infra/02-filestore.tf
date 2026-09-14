@@ -1,4 +1,4 @@
-# 02-filestore.tf — Jail, controller spool, and /mnt/data filesystems.
+# 02-filestore.tf — Jail, controller spool, accounting, and /mnt/data filesystems.
 # Sizes live here. Task 1 always creates new filesystems.
 
 module "filestore" {
@@ -18,8 +18,16 @@ module "filestore" {
     existing = null
   }
 
-  # Task 1 does not run slurmdbd. No accounting filesystem.
-  accounting = null
+  # slurmdbd / MariaDB volume on the accounting node (assignment: 1×8vcpu).
+  accounting = {
+    spec = {
+      disk_type            = "NETWORK_SSD"
+      size_gibibytes       = 128
+      block_size_kibibytes = 4
+      forbid_deletion      = false
+    }
+    existing = null
+  }
 
   jail = {
     spec = {

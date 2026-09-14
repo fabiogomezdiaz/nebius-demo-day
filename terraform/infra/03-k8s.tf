@@ -41,6 +41,33 @@ locals {
     }
   }
 
+  # Assignment CPU table: 1 × 8vcpu-32gb for slurmdbd + MariaDB.
+  node_group_accounting = {
+    resource = {
+      platform = "cpu-d3"
+      preset   = "8vcpu-32gb"
+    }
+    boot_disk = {
+      type                 = "NETWORK_SSD"
+      size_gibibytes       = 128
+      block_size_kibibytes = 4
+    }
+  }
+
+  # Assignment CPU table: 1 × 4vcpu-16gb. NFS-in-k8s (not a standalone NFS VM).
+  node_group_nfs = {
+    size = 1
+    resource = {
+      platform = "cpu-d3"
+      preset   = "4vcpu-16gb"
+    }
+    boot_disk = {
+      type                 = "NETWORK_SSD"
+      size_gibibytes       = 128
+      block_size_kibibytes = 4
+    }
+  }
+
   # 2×H100 1gpu-16vcpu-200gb. That preset cannot join InfiniBand.
   # gpu_cluster.id is a dummy so stock gpu_fabric_validation.tf passes;
   # the id is never attached because the preset is gpu_cluster_compatible = false.
@@ -117,21 +144,24 @@ module "k8s" {
   use_preinstalled_gpu_drivers = true
 
   node_group_accounting = {
-    enabled = false
-    spec    = null
+    enabled = true
+    spec    = local.node_group_accounting
   }
   node_group_controller = local.node_group_controller
   node_group_login      = local.node_group_login
   node_group_nfs = {
-    enabled = false
-    spec    = null
+    enabled = true
+    spec    = local.node_group_nfs
   }
   node_group_system     = local.node_group_system
   node_group_workers    = local.node_group_workers
   node_group_workers_v2 = local.node_group_workers_v2
 
   filestores = {
-    accounting = null
+    accounting = {
+      id        = module.filestore.accounting.id
+      mount_tag = module.filestore.accounting.mount_tag
+    }
     controller_spool = {
       id        = module.filestore.controller_spool.id
       mount_tag = module.filestore.controller_spool.mount_tag
