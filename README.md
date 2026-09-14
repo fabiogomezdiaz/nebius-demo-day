@@ -6,6 +6,7 @@ Deploy [Soperator](https://github.com/nebius/soperator) from the official [solut
 
 Assignment brief: [docs/00-assignment.md](docs/00-assignment.md).  
 Status (done vs missing): [docs/00-status.md](docs/00-status.md).  
+Task 1 presentation report (job 73 logs + GPU screenshots): [docs/03-task-1-report.md](docs/03-task-1-report.md).  
 Glossary: [docs/00-glossary.md](docs/00-glossary.md).  
 Task 1 gotchas: [docs/01-task-1-gotchas.md](docs/01-task-1-gotchas.md).
 
@@ -60,7 +61,7 @@ InfiniBand Terraform notes: [docs/terraform-infiniband-changes.md](docs/terrafor
 - Single-GPU H100 preset **does not support InfiniBand**
 - `public_o11y_enabled = false`
 - Do not share one filesystem between two jails
-- CPU nodesets sized to **6 nodes / 52 vCPU** in this lab (assignment table is 8 nodes / 64 vCPU including Accounting + NFS — those two are off; see [00-status.md](docs/00-status.md))
+- CPU nodesets sized to **8 nodes / 64 vCPU** after Accounting + NFS are applied (see [00-status.md](docs/00-status.md))
 - Retain the environment for the duration of the demo
 
 ## Repository layout
