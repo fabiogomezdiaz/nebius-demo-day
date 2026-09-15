@@ -1,0 +1,32 @@
+---
+description: Keep shell and Terraform linear, quiet, and Python-free
+alwaysApply: true
+---
+
+# Scripts and Terraform
+
+Read a file top to bottom and know what it does. Do not hide the work in helpers, `common.sh` functions, or Python.
+
+## Shell (`task-1/`, `task-2/`, `terraform/**/*.sh`)
+
+- One script = one job. Numbered runbook scripts stay linear: check, run commands, wait, print the next step.
+- Prefer `kubectl apply -f` / `delete -f` YAML over `awk`, `jq` rewrites, or live `kubectl patch`.
+- `common.sh` may set `KUBECONFIG` and a `k()` alias. Do not put the procedure there.
+- Few `echo`s. No debug dumps, heredoc tutorials, or per-step chatter.
+- **No Python in shell scripts.** Use kubectl, helm, jq, awk only if a YAML file cannot do the job. `task-1/train.py` and `fetch_dolly.py` are the training job, not glue.
+
+```bash
+# BAD — logic lives in another file
+source common.sh
+set_workers 2
+
+# GOOD — this file is the whole story
+kubectl apply --server-side --force-conflicts -f "${K8S}/workers-2.yaml"
+kubectl wait -n soperator --for=condition=Ready pod/worker-1 --timeout=300s
+```
+
+## Terraform (`terraform/**/*.tf`)
+
+- Keep a change in the file that already owns that resource. Do not add a module, local, or extra `.tf` just to share a one-liner.
+- Same quiet bar: no generated wrappers, no Python, no `local-exec` that calls Python.
+- After edits: `terraform fmt -recursive` and `terraform validate` in that stack (`infra` or `platform`).
