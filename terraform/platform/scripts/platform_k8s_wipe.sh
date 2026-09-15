@@ -31,6 +31,7 @@ NAMESPACES=(
   soperator
   soperator-system
   soperator-checks
+  task2-inference
   kruise-system
   kruise-daemon-config
   monitoring-system

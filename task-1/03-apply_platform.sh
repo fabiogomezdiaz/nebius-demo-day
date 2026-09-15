@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Apply terraform/platform: Flux (Soperator installer), Soperator/Slurm,
-# NVIDIA GPU Operator.
+# NVIDIA GPU Operator. Also drops Task 2 vLLM if present and puts both
+# H100s back on Slurm workers (training mode).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,6 +25,15 @@ terraform apply "$@"
 
 cd "${ROOT}"
 
+# Training needs worker-0 and worker-1. Task 2 may have paused Flux and
+# scheduled vLLM on the second H100 — undo that here, not in task-2.
+K8S="${ROOT}/task-2/k8s"
+kubectl delete -f "${K8S}/ingress.yaml" --wait --timeout=60s --ignore-not-found >/dev/null
+kubectl delete -f "${K8S}/vllm.yaml" --wait --timeout=180s --ignore-not-found >/dev/null
+kubectl apply --server-side --force-conflicts -f "${K8S}/flux-resume.yaml" >/dev/null
+kubectl apply --server-side --force-conflicts -f "${K8S}/workers-2.yaml" >/dev/null
+kubectl wait -n soperator --for=condition=Ready pod/worker-0 --timeout=300s >/dev/null
+kubectl wait -n soperator --for=condition=Ready pod/worker-1 --timeout=300s >/dev/null
+
 echo
-echo "Next: ./task-1/04-sync.sh"
-echo "Then: ./task-1/05-login.sh"
+echo "Workers: 2. Next: ./task-1/04-sync.sh then ./task-1/05-login.sh"
