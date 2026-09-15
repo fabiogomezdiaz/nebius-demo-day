@@ -26,7 +26,7 @@ Destroy after the interview, **platform then infra**:
 | `01-seed_tfvars.sh` | Tenant / project / region / subnet / SSH pubkey into tfvars |
 | `02-apply_infra.sh` | MK8s, node groups, filestore, kubeconfig |
 | `03-apply_platform.sh` | Flux, Soperator, GPU Operator; restores 2 workers (drops Task 2 vLLM) |
-| `04-sync.sh` | Copy job files onto `/mnt/data/nebius-demo/task-1/` (skips these laptop scripts) |
+| `04-sync.sh` | Copy job files onto `/mnt/data/nebius-demo/task-1/` (skips laptop scripts and hf_cache) |
 | `05-login.sh` | SSH to the Slurm login LoadBalancer |
 | `06-destroy_platform.sh` | Tear down operators; keep MK8s |
 | `07-destroy_infra.sh` | Tear down MK8s and filestore |
