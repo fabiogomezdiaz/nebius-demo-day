@@ -12,7 +12,7 @@ Things that bit this lab while putting Soperator `4.1.8` on **2×1×H100 Etherne
 - Hidden ActiveChecks run as user **`soperato`**. `scancel -u soperator` fails.
 - Platform apply hangs 240 minutes unless the Flux overlay turns off bootstrap activechecks. Destroy is **platform → infra**, then wipe (Helm `keep`).
 - Success (training): `world_size=2`, `cuda=True`, `n_gpu=1` per rank, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`.
-- Still open vs the assignment: inference + serve ([../task-2/](../task-2/)), base vs LoRA compare ([../task-3/](../task-3/)), >80% GPU ([../task-4/](../task-4/)). Accounting/NFS Terraform is in place — apply infra then platform. See [../overview/status.md](../overview/status.md).
+- Still open vs the assignment: base vs LoRA compare ([../task-3/](../task-3/)), >80% GPU ([../task-4/](../task-4/)). Inference is done ([../task-2/report.md](../task-2/report.md)). Accounting/NFS Terraform is in place — apply infra then platform. See [../overview/status.md](../overview/status.md).
 
 Terraform overlay detail: [terraform-infiniband.md](terraform-infiniband.md). Runbook: [training.md](training.md).
 
@@ -108,7 +108,7 @@ Those jobs sit on partition **`hidden`**. They can leave `GresUsed` non-zero or 
 
 ## Submitting the training job
 
-Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment stays `Pending` until workers are scaled to 1 (`task-2/01-gpu_mode.sh serve`).
+Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment (Task 2, namespace `task2-inference`) stays `Pending` until workers are scaled to 1 (`task-2/02-serve.sh`).
 
 What actually ran (job 66): two nodes, `--gpus-per-node=1`, `--ntasks-per-node=1`, `--cpus-per-task=1`, `--mem=80G`, then `bash train.sbatch` as `--wrap`. `#SBATCH` lines inside the wrapped script are **ignored**; flags must be on the `sbatch` command (or you must `sbatch train.sbatch` without `--wrap`).
 

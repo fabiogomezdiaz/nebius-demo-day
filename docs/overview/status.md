@@ -2,7 +2,7 @@
 
 Brief: [assignment.md](assignment.md). Cluster is **live**. Do not destroy it.
 
-This repo treated **task 1** as Soperator distributed training. The email also lists inference, a base-vs-trained compare, and >80% GPU use, and calls tasks **2–4** extra mile. Those extras are **not done**. Presentation write-up: [../task-1/report.md](../task-1/report.md).
+This repo treated **task 1** as Soperator distributed training. The email also lists inference, a base-vs-trained compare, and >80% GPU use, and calls tasks **2–4** extra mile. Task 2 is **done**. Presentation write-ups: [../task-1/report.md](../task-1/report.md), [../task-2/report.md](../task-2/report.md).
 
 ## Done (task 1 — training)
 
@@ -54,19 +54,25 @@ kubectl get nodes -l slurm.nebius.ai/nodeset-name
 
 GRES `Cores=0-7` also lands in platform on this apply (replacing the live kubectl patch).
 
-## Not done (email extras / tasks 2–4)
+## Done (task 2 — serve)
 
 | Requirement | Status |
 | --- | --- |
-| Inference on the **same** MK8s cluster, **serving** the trained model | **Scaffolded, not applied yet.** [../task-2/](../task-2/). `./task-2/01-gpu_mode.sh serve` scales Soperator workers 2→1 (Flux-patched) and applies a vLLM Deployment on the freed H100. `train` flips back. |
-| Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** [../task-3/](../task-3/). |
-| Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no.** See [../task-4/](../task-4/) and [../task-1/report.md](../task-1/report.md). |
+| Inference on the **same** MK8s cluster, **serving** the trained model | **Done.** [../task-2/report.md](../task-2/report.md). `serve` scaled workers 2→1 (Flux-patched), vLLM in `task2-inference` loaded job 73 LoRA `dolly`. `POST /v1/chat/completions` returned 200. |
+
+## Not done (email extras / tasks 3–4)
+
+| Requirement | Status |
+| --- | --- |
+| Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** Base is served as `qwen25-7b` but not compared yet. [../task-3/](../task-3/). |
+| Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no** (task 1 job 73). See [../task-4/](../task-4/) and [../task-1/report.md](../task-1/report.md). |
 
 ## Evidence to grab before the interview
 
-Assembled in [../task-1/report.md](../task-1/report.md) (job 73 logs + `docs/task-1/static/evidence/` PNGs).
+Assembled in [../task-1/report.md](../task-1/report.md) (job 73 logs + `docs/task-1/static/evidence/` PNGs) and [../task-2/report.md](../task-2/report.md).
 
 - `sinfo` / `squeue` (or `train-73.log`: `world_size=2`, `cuda=True`, `NET/Socket`)
 - `ls -lh /mnt/data/nebius-demo/checkpoints/dolly-lora`
 - Nebius GPU dashboards for the ~15:35 train window (already exported)
-- Terraform: this git repo (`terraform/infra` + `terraform/platform`)
+- `curl` LoRA serve: `POST /v1/chat/completions` `"model":"dolly"` → 200
+- `nvidia-smi` in the vLLM pod: **70 GiB / 0% util / 117 W**; serve dashboards in [../task-2/report.md](../task-2/report.md)

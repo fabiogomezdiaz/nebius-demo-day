@@ -28,7 +28,7 @@ Job **73** trained `Qwen/Qwen2.5-7B-Instruct` on Dolly (`train[:1500]`). Both ra
 | 2×H100, 1 GPU/node, one MK8s cluster | **Done.** `1gpu-16vcpu-200gb` × 2 |
 | `public_o11y_enabled = false`, new jail, `yq` | **Done.** |
 | Utilize **>80% of the GPUs** (console) | **Compute: yes** on job 73 (~100% SM). **HBM: no** (~55–70% memory). Spike was short (~35 s train). |
-| Inference + serve the trained model | Extra mile — **not in this report** |
+| Inference + serve the trained model | Extra mile — **done**, not this report: [../task-2/report.md](../task-2/report.md) |
 | Run the **base** model and **compare** | Extra mile — **not in this report** |
 
 Completing task 1 is a pass. Keep the cluster; do not destroy it before the interview.

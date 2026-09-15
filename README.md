@@ -51,7 +51,7 @@ flowchart LR
 7. On login: `bash /mnt/data/nebius-demo/task-1/setup_env.sh`.
 8. `sbatch /mnt/data/nebius-demo/task-1/train.sbatch`.
 9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`, both GPUs busy.
-10. Extra mile (task 2): `./task-2/01-gpu_mode.sh serve` then port-forward `svc/vllm`. Flip back with `./task-2/01-gpu_mode.sh train`.
+10. Extra mile (task 2): `./task-2/01-ingress.sh` (DNS A record), then `./task-2/02-serve.sh`. Flip back with `./task-1/03-apply_platform.sh`.
 
 Detail: [docs/task-1/training.md](docs/task-1/training.md).  
 InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/terraform-infiniband.md).
@@ -73,7 +73,7 @@ docs/            # overview + task-1 … task-4
 gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 task-1/          # 00–07 runbook, train.sbatch / train.py / setup_env.sh
-task-2/          # 01-gpu_mode.sh, vLLM Deployment
+task-2/          # 01-ingress, 02-serve, 03-status, 04-destroy_ingress; vLLM in task2-inference
 presentation/    # PowerPoint source + generated deck
 ```
 

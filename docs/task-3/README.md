@@ -9,6 +9,6 @@ Assignment: run the **original (untrained)** model and **compare** results to th
 - Base: `Qwen/Qwen2.5-7B-Instruct`
 - Adapters: `/mnt/data/nebius-demo/checkpoints/dolly-lora` (job 73)
 
-Nothing has queried base vs adapter yet.
+- Base is already served as `qwen25-7b` next to LoRA `dolly` (task 2). Nothing has queried them side by side yet.
 
 See [../overview/status.md](../overview/status.md). Training path: [../task-1/](../task-1/).
