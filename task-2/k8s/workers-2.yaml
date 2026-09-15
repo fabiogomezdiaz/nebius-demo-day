@@ -1,0 +1,8 @@
+# Both H100s back on Slurm (Task 1). Applied by ./task-1/03-apply_platform.sh.
+apiVersion: slurm.nebius.ai/v1alpha1
+kind: NodeSet
+metadata:
+  name: worker
+  namespace: soperator
+spec:
+  replicas: 2

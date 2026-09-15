@@ -1,11 +1,11 @@
 # vLLM on the freed H100. Apply only after workers are scaled to 1
-# (task-2/01-gpu_mode.sh serve). Mounts the same jail submount that
-# holds job 73 adapters. Namespace is soperator so that PVC is visible.
+# (task-2/02-serve.sh). Lives in task2-inference, not soperator.
+# Mounts the same jail /mnt/data path via jail-submount-data-task2-pv.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vllm
-  namespace: soperator
+  namespace: task2-inference
   labels:
     app: vllm
     demo: task-2
@@ -20,6 +20,9 @@ spec:
         app: vllm
         demo: task-2
     spec:
+      # Service name "vllm" would inject VLLM_PORT=tcp://<clusterIP>:8000
+      # and crash the engine. See docs.vllm.ai serving/env_vars.html.
+      enableServiceLinks: false
       runtimeClassName: nvidia
       terminationGracePeriodSeconds: 30
       nodeSelector:
@@ -34,6 +37,8 @@ spec:
             - labelSelector:
                 matchLabels:
                   slurm.nebius.ai/worker: "true"
+              namespaces:
+                - soperator
               topologyKey: kubernetes.io/hostname
       containers:
         - name: vllm
@@ -98,13 +103,13 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: jail-submount-data-pvc
+            claimName: jail-submount-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: vllm
-  namespace: soperator
+  namespace: task2-inference
   labels:
     app: vllm
     demo: task-2

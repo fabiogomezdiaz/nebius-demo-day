@@ -1,0 +1,50 @@
+# Second claim of the same jail /mnt/data local path. The original PV
+# jail-submount-data-pv is Bound to soperator/jail-submount-data-pvc;
+# Kubernetes allows one PVC per PV, so Task 2 gets its own PV object
+# pointing at /mnt/jail-submount-data. Reclaim is Retain: deleting this
+# PV must not touch filestore data (LoRA adapters, HF cache).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jail-submount-data-task2-pv
+  labels:
+    demo: task-2
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 512Gi
+  local:
+    path: /mnt/jail-submount-data
+  mountOptions:
+    - rw
+    - relatime
+    - exec
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: slurm.nebius.ai/jail
+              operator: In
+              values:
+                - "true"
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jail-submount-data
+  namespace: task2-inference
+  labels:
+    demo: task-2
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 512Gi
+  storageClassName: ""
+  volumeName: jail-submount-data-task2-pv
+  volumeMode: Filesystem

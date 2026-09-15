@@ -1,0 +1,9 @@
+# Let Flux manage Soperator HelmReleases again (workers follow terraform-fluxcd-values).
+# Applied by ./task-1/03-apply_platform.sh after terraform apply.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: soperator-fluxcd
+  namespace: flux-system
+spec:
+  suspend: false

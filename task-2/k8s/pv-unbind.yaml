@@ -1,0 +1,5 @@
+# Drop stale claimRef on the Task 2 jail PV after the PVC was deleted
+# (phase Released). Bound volumes must not use this.
+#   kubectl patch pv jail-submount-data-task2-pv --type json --patch-file pv-unbind.yaml
+- op: remove
+  path: /spec/claimRef

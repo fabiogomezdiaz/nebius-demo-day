@@ -1,0 +1,9 @@
+# One Slurm worker → one H100 free for vLLM. Apply after flux-pause.yaml.
+# Server-side apply only owns spec.replicas; the rest of the NodeSet stays Helm's.
+apiVersion: slurm.nebius.ai/v1alpha1
+kind: NodeSet
+metadata:
+  name: worker
+  namespace: soperator
+spec:
+  replicas: 1

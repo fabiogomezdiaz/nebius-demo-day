@@ -1,0 +1,5 @@
+# Helm values for ingress-nginx (task-2 only). Not part of Soperator/Flux.
+controller:
+  service:
+    type: LoadBalancer
+  watchIngressWithoutClass: false
