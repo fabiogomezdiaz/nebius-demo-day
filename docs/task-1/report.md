@@ -11,6 +11,8 @@ Assignment: [../overview/assignment.md](../overview/assignment.md). Architecture
 
 ---
 
+
+
 ## 30-second pitch
 
 The stock Soperator recipe assumes **8×H100 + InfiniBand**. This lab is **two Ethernet H100s**. I overlayed Terraform so Slurm still schedules GPUs (`gres.conf` `Cores=0-7`, sentinel `gpu_cluster.id`), then submitted a **2-node LoRA** job through Slurm — not a Kubernetes GPU Deployment.
@@ -19,21 +21,27 @@ Job **73** trained `Qwen/Qwen2.5-7B-Instruct` on Dolly (`train[:1500]`). Both ra
 
 ---
 
+
+
 ## What the assignment asked vs what this report covers
 
-| Assignment bullet | This report |
-| --- | --- |
-| Distributed train/fine-tune on Soperator, **latest tag not `main`** | **Done.** `soperator-v4.1.8-1`, job 73 |
-| Manipulate Terraform for **1-GPU node, no InfiniBand** | **Done.** Sentinel GPU cluster + 1-GPU GRES |
-| 2×H100, 1 GPU/node, one MK8s cluster | **Done.** `1gpu-16vcpu-200gb` × 2 |
-| `public_o11y_enabled = false`, new jail, `yq` | **Done.** |
-| Utilize **>80% of the GPUs** (console) | **Compute: yes** on job 73 (~100% SM). **HBM: no** (~55–70% memory). Spike was short (~35 s train). |
-| Inference + serve the trained model | Extra mile — **done**, not this report: [../task-2/report.md](../task-2/report.md) |
-| Run the **base** model and **compare** | Extra mile — **not in this report** |
+
+| Assignment bullet                                                   | This report                                                                                         |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Distributed train/fine-tune on Soperator, **latest tag not** `main` | **Done.** `soperator-v4.1.8-1`, job 73                                                              |
+| Manipulate Terraform for **1-GPU node, no InfiniBand**              | **Done.** Sentinel GPU cluster + 1-GPU GRES                                                         |
+| 2×H100, 1 GPU/node, one MK8s cluster                                | **Done.** `1gpu-16vcpu-200gb` × 2                                                                   |
+| `public_o11y_enabled = false`, new jail, `yq`                       | **Done.**                                                                                           |
+| Utilize **>80% of the GPUs** (console)                              | **Compute: yes** on job 73 (~100% SM). **HBM: no** (~55–70% memory). Spike was short (~35 s train). |
+| Inference + serve the trained model                                 | Extra mile — **done**, not this report: [../task-2/report.md](../task-2/report.md)                  |
+| Run the **base** model and **compare**                              | Extra mile — **not in this report**                                                                 |
+
 
 Completing task 1 is a pass. Keep the cluster; do not destroy it before the interview.
 
 ---
+
+
 
 ## Command walkthrough (live demo)
 
@@ -54,6 +62,8 @@ nebius profile create
 # and the SSH public-key path + kubeconfig path into terraform/platform/terraform.tfvars.
 ./task-1/01-seed_tfvars.sh
 ```
+
+
 
 ### 2. Laptop — infra (cloud only)
 
@@ -117,6 +127,8 @@ cd /mnt/data/nebius-demo
 bash task-1/setup_env.sh
 ```
 
+
+
 ### 7. Login — is Slurm up?
 
 ```bash
@@ -124,7 +136,7 @@ sinfo          # partitions + node states; want workers idle (or already alloc)
 sinfo -N       # one line per node
 ```
 
-Partition we submit to is **`main`** (default). `login` is the SSH box, not a partition.
+Partition we submit to is `main` (default). `login` is the SSH box, not a partition.
 
 ### 8. Login — submit the training job
 
@@ -170,6 +182,8 @@ Init COMPLETE
 saved LoRA adapters to /mnt/data/nebius-demo/checkpoints/dolly-lora
 ```
 
+
+
 ### 10. Login — job details (accounting is off)
 
 `sacct` prints `Slurm accounting storage is disabled` on this cluster. Use:
@@ -189,6 +203,8 @@ ls -lh /mnt/data/nebius-demo/checkpoints/dolly-lora
 squeue    # should be empty when finished
 ```
 
+
+
 ### 12. Nebius console (browser)
 
 MK8s cluster → **Metrics** → **GPU metrics**, last 15 minutes, 15 s. Same window as job 73 (~15:35 local). That is where the screenshots in this report came from.
@@ -197,22 +213,26 @@ MK8s cluster → **Metrics** → **GPU metrics**, last 15 minutes, 15 s. Same wi
 
 Where each command runs:
 
-| Step | Where | What it actually does |
-| --- | --- | --- |
-| `00`–`01` | laptop | Tools + tfvars |
-| `02` | laptop | Cloud: MK8s + disks |
-| `03` | laptop | Operators: Slurm/Soperator |
-| `kubectl …` | laptop | Inspect K8s |
-| `task-1/04-sync.sh` | laptop | Copy files onto shared `/mnt/data` |
-| `05` | laptop → login | SSH |
-| `setup_env.sh` | login | Shared venv |
-| `sinfo` / `sbatch` / `squeue` | login | Slurm |
-| `tail` / `ls` | login | Read `/mnt/data` |
-| GPU dashboards | browser | Proof the H100s worked |
+
+| Step                          | Where          | What it actually does              |
+| ----------------------------- | -------------- | ---------------------------------- |
+| `00`–`01`                     | laptop         | Tools + tfvars                     |
+| `02`                          | laptop         | Cloud: MK8s + disks                |
+| `03`                          | laptop         | Operators: Slurm/Soperator         |
+| `kubectl …`                   | laptop         | Inspect K8s                        |
+| `task-1/04-sync.sh`           | laptop         | Copy files onto shared `/mnt/data` |
+| `05`                          | laptop → login | SSH                                |
+| `setup_env.sh`                | login          | Shared venv                        |
+| `sinfo` / `sbatch` / `squeue` | login          | Slurm                              |
+| `tail` / `ls`                 | login          | Read `/mnt/data`                   |
+| GPU dashboards                | browser        | Proof the H100s worked             |
+
 
 Do **not** destroy (`./task-1/06-destroy_platform.sh` then `./task-1/07-destroy_infra.sh`) until after the interview.
 
 ---
+
+
 
 ## Architecture (what we deployed)
 
@@ -226,24 +246,30 @@ Talking points:
 - **Platform** (Terraform → kubeconfig): Flux, Soperator, NVIDIA GPU Operator (`driver.enabled=false`; drivers are on the MK8s image).
 - **Workloads:** `sbatch` on the login node. Worker pods already hold `nvidia.com/gpu`, so a competing GPU Deployment would stay `Pending`.
 
-| Role | What runs there | GPU? |
-| --- | --- | --- |
-| `system 0–3` | Flux, Soperator operator, GPU Operator | No |
-| `controller-0` | `slurmctld` | No |
-| `login-0` | SSH + `sbatch` / `sinfo` | No |
-| `worker-0`, `worker-1` | `slurmd` + the training processes | 1×H100 each |
+
+| Role                   | What runs there                        | GPU?        |
+| ---------------------- | -------------------------------------- | ----------- |
+| `system 0–3`           | Flux, Soperator operator, GPU Operator | No          |
+| `controller-0`         | `slurmctld`                            | No          |
+| `login-0`              | SSH + `sbatch` / `sinfo`               | No          |
+| `worker-0`, `worker-1` | `slurmd` + the training processes      | 1×H100 each |
+
 
 Shared disks:
 
-| Volume | Who mounts it | Used for |
-| --- | --- | --- |
-| Jail | Slurm pods | Shared OS / venv |
-| `/mnt/data` | login + both workers | Scripts, HF cache, logs, checkpoints |
-| Controller spool | controller only | Scheduler state |
+
+| Volume           | Who mounts it        | Used for                             |
+| ---------------- | -------------------- | ------------------------------------ |
+| Jail             | Slurm pods           | Shared OS / venv                     |
+| `/mnt/data`      | login + both workers | Scripts, HF cache, logs, checkpoints |
+| Controller spool | controller only      | Scheduler state                      |
+
 
 `/mnt/data` is on the **login** node so you can `sbatch` the same files the workers execute, and `tail` the same logs they write.
 
 ---
+
+
 
 ## How the job runs
 
@@ -273,20 +299,26 @@ Rendezvous uses the **eth0** IPv4 address. `hostname -I` can return `docker0` (`
 
 What we trained (job 73):
 
-| Knob | Value |
-| --- | --- |
-| Base model | `Qwen/Qwen2.5-7B-Instruct` |
-| Method | LoRA SFT (`trl.SFTTrainer`), adapters only |
-| Data | `databricks/databricks-dolly-15k` `train[:1500]` |
-| Parallelism | 2 nodes × 1 GPU, PyTorch DDP via `torchrun` |
-| Precision | bf16 |
-| Checkpoint | `/mnt/data/nebius-demo/checkpoints/dolly-lora` |
+
+| Knob        | Value                                            |
+| ----------- | ------------------------------------------------ |
+| Base model  | `Qwen/Qwen2.5-7B-Instruct`                       |
+| Method      | LoRA SFT (`trl.SFTTrainer`), adapters only       |
+| Data        | `databricks/databricks-dolly-15k` `train[:1500]` |
+| Parallelism | 2 nodes × 1 GPU, PyTorch DDP via `torchrun`      |
+| Precision   | bf16                                             |
+| Checkpoint  | `/mnt/data/nebius-demo/checkpoints/dolly-lora`   |
+
 
 Why LoRA 7B: fits one 80 GB H100 with a useful batch, finishes in a lab window, still loads both GPUs. Full 7B SFT is slower and easier to OOM.
 
 ---
 
+
+
 ## Proof — Slurm and logs (job 73)
+
+
 
 ### Queue while it ran
 
@@ -350,6 +382,8 @@ Logs on the jail:
 
 ---
 
+
+
 ## Proof — Nebius GPU dashboards (job 73)
 
 Window: **last 15 minutes**, **15 s** scrape, **GPU metrics** tab. Both series are the two H100 workers:
@@ -363,12 +397,14 @@ Spike time **~15:35** local matches job 73 (~20:33–20:34 UTC).
 
 ![GPU utilization ~100% and ~50 GB framebuffer on both H100s](static/evidence/job73-gpu-util-memory.png)
 
-| Panel | What it shows | Why it matters |
-| --- | --- | --- |
-| **GPU utilization** | Both GPUs spike to **~100%** | Cards were busy. Clears “>80% of the GPUs” if that means SM util. |
-| **Memory utilization** | Peak **~55–70%** | Weights + activations on device; not an empty CUDA context. |
-| **Free frame buffer** | Drops from ~80 GB to ~30 GB | Same story in bytes. |
-| **Used frame buffer** | Rises to **~50 GB** | Contrast with the failed job (~2 MB). |
+
+| Panel                  | What it shows                | Why it matters                                                    |
+| ---------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| **GPU utilization**    | Both GPUs spike to **~100%** | Cards were busy. Clears “>80% of the GPUs” if that means SM util. |
+| **Memory utilization** | Peak **~55–70%**             | Weights + activations on device; not an empty CUDA context.       |
+| **Free frame buffer**  | Drops from ~80 GB to ~30 GB  | Same story in bytes.                                              |
+| **Used frame buffer**  | Rises to **~50 GB**          | Contrast with the failed job (~2 MB).                             |
+
 
 The pulse is **narrow** because train runtime was **34.7 s**. Idle on either side is the cluster waiting, not a failed train.
 
@@ -390,18 +426,22 @@ PCIe RX/TX on both nodes jumps to ~1 GiB during the same minute (host ↔ GPU). 
 
 ![SM clock and power spike on both devices](static/evidence/job73-clocks-power.png)
 
-| Panel | Idle | During job 73 |
-| --- | --- | --- |
-| SM clock | ~400 MHz | ~**2000 MHz** |
-| Power | ~70–90 W | **~500 W** |
-| Energy | slow creep | visible step on both cards |
-| Throttle reasons | ~1 | brief dip, not a sustained throttle |
+
+| Panel            | Idle       | During job 73                       |
+| ---------------- | ---------- | ----------------------------------- |
+| SM clock         | ~400 MHz   | ~**2000 MHz**                       |
+| Power            | ~70–90 W   | **~500 W**                          |
+| Energy           | slow creep | visible step on both cards          |
+| Throttle reasons | ~1         | brief dip, not a sustained throttle |
+
 
 ![Temperature spike; still far from slowdown](static/evidence/job73-temperature.png)
 
 Memory/package temp ~35 °C → **~50 °C**. Power limit ~700 W, slowdown temp 90 °C. We were **not** thermally limited.
 
 ---
+
+
 
 ## Contrast: job 71 (failed) vs job 73 (trained)
 
@@ -415,16 +455,20 @@ Slurm, CUDA, and Dolly load had already succeeded. The script passed an invalid 
 
 ![Job 71: ~0% util, ~2 MB framebuffer](static/evidence/job71-gpu-idle.png)
 
-| | Job 71 | Job 73 |
-| --- | --- | --- |
-| State | `FAILED` | `COMPLETED` (log + adapters) |
-| GPU util | ~0% | ~100% |
-| Used FB | ~2 MB | ~50 GB |
-| Meaning | CUDA context, then crash | Real 7B LoRA |
+
+|          | Job 71                   | Job 73                       |
+| -------- | ------------------------ | ---------------------------- |
+| State    | `FAILED`                 | `COMPLETED` (log + adapters) |
+| GPU util | ~0%                      | ~100%                        |
+| Used FB  | ~2 MB                    | ~50 GB                       |
+| Meaning  | CUDA context, then crash | Real 7B LoRA                 |
+
 
 That pair of screenshots is the simplest “we actually trained” proof.
 
 ---
+
+
 
 ## What we had to change in Terraform (the interview meat)
 
@@ -436,7 +480,7 @@ Stock recipe = 8-GPU NVLink node + InfiniBand GPU cluster. This preset cannot jo
 
 ### 2. GRES (Slurm’s GPU map)
 
-There is **no `gres.conf` in this git repo**. Slurm does not probe GPUs. `slurmctld` only believes that file. Soperator **generates** it from Terraform `worker_nodesets[].gres_config`, then Flux puts it in ConfigMap `soperator/soperator-slurm-configs` (key `gres.conf`) and mounts it on the controller.
+There is **no** `gres.conf` **in this git repo**. Slurm does not probe GPUs. `slurmctld` only believes that file. Soperator **generates** it from Terraform `worker_nodesets[].gres_config`, then Flux puts it in ConfigMap `soperator/soperator-slurm-configs` (key `gres.conf`) and mounts it on the controller.
 
 The generator is `terraform/infra/04-outputs.tf`. For this 1-GPU preset it emits **one line** (`worker_gres_last_core` = 8 cores − 1 = 7):
 
@@ -462,21 +506,25 @@ NodeName=worker-[0-1] AutoDetect=off Name=gpu Type=nvidia_h100_80gb_hbm3 File=/d
 
 Terraform only supplies the `Name=gpu … Cores=0-7` piece. Soperator wraps it with `NodeName=worker-[0-1]` and a header. The file is **not** a Kubernetes volumeMount of that ConfigMap. Soperator writes it onto the **jail**, which every Slurm pod mounts:
 
-| Path | What |
-| --- | --- |
-| ConfigMap `soperator/soperator-slurm-configs` key `gres.conf` | Source Flux/Helm renders |
-| `/mnt/jail/etc/slurm/gres.conf` | Real file (jail filestore) |
-| `/etc/slurm` → `/mnt/jail/etc/slurm` | Symlink in the `slurmctld` / `slurmd` containers |
+
+| Path                                                          | What                                             |
+| ------------------------------------------------------------- | ------------------------------------------------ |
+| ConfigMap `soperator/soperator-slurm-configs` key `gres.conf` | Source Flux/Helm renders                         |
+| `/mnt/jail/etc/slurm/gres.conf`                               | Real file (jail filestore)                       |
+| `/etc/slurm` → `/mnt/jail/etc/slurm`                          | Symlink in the `slurmctld` / `slurmd` containers |
+
 
 `slurmctld` on `controller-0` and `slurmd` on `worker-0` / `worker-1` all see the same jail file. `slurm.conf` next to it has `GresTypes=gpu` and `Gres=gpu:nvidia_h100_80gb_hbm3:1` on each worker line.
 
 Stock `gres_config_by_platform["gpu-h100-sxm"]` is an **8-GPU NVLink** map (`/dev/nvidia0`–`7`, `Cores=0-31` / `32-63`). `slurm.conf` already said `CPUs=16` and `Gres=gpu:...:1`. `gres.conf` did not. These nodes are 1 GPU / 16 logical CPUs (`S:C:T = 1:8:2`).
 
-| Map | Result |
-| --- | --- |
-| `Cores=0-31` (stock) | `slurmctld` CrashLoop: invalid GRES, only 16 CPUs |
-| `Cores=0-15` (thread IDs) | Controller starts, but GPU jobs sit `PD (Resources)` |
-| **`Cores=0-7`** (this overlay) | GPU binds (`Gres=…(S:0)`), `cuda=True` |
+
+| Map                        | Result                                               |
+| -------------------------- | ---------------------------------------------------- |
+| `Cores=0-31` (stock)       | `slurmctld` CrashLoop: invalid GRES, only 16 CPUs    |
+| `Cores=0-15` (thread IDs)  | Controller starts, but GPU jobs sit `PD (Resources)` |
+| `Cores=0-7` (this overlay) | GPU binds (`Gres=…(S:0)`), `cuda=True`               |
+
 
 Dump the live file from the laptop (kubeconfig from infra):
 
@@ -498,6 +546,8 @@ Ethernet 1-GPU lab never writes some ActiveCheck statuses. Flux overlay sets `ru
 
 ---
 
+
+
 ## How to walk this in the room
 
 1. **Constraint** — 2×1×H100, no IB, tag `4.1.8`, not `main`.
@@ -513,15 +563,20 @@ If asked “would 8×H100 + IB change this?”: set a real fabric, drop `NCCL_IB
 
 ---
 
+
+
 ## File map
 
-| Path | What |
-| --- | --- |
-| `task-1/00`–`07` | Prereqs → seed → infra → platform → sync → SSH → destroy |
-| `terraform/infra` | MK8s, node groups, filestore, GRES / GPU-cluster overlay |
-| `terraform/platform` | Flux, Soperator, GPU Operator |
-| `task-1/train.sbatch` | Slurm + NCCL + `torchrun` |
-| `task-1/train.py` | LoRA SFT |
-| `/mnt/data/nebius-demo/outputs/train-73.log` | Job 73 stdout |
-| `/mnt/data/nebius-demo/checkpoints/dolly-lora` | Adapters |
-| `docs/task-1/static/evidence/` | Console PNGs used here |
+
+| Path                                           | What                                                     |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| `task-1/00`–`07`                               | Prereqs → seed → infra → platform → sync → SSH → destroy |
+| `terraform/infra`                              | MK8s, node groups, filestore, GRES / GPU-cluster overlay |
+| `terraform/platform`                           | Flux, Soperator, GPU Operator                            |
+| `task-1/train.sbatch`                          | Slurm + NCCL + `torchrun`                                |
+| `task-1/train.py`                              | LoRA SFT                                                 |
+| `/mnt/data/nebius-demo/outputs/train-73.log`   | Job 73 stdout                                            |
+| `/mnt/data/nebius-demo/checkpoints/dolly-lora` | Adapters                                                 |
+| `docs/task-1/static/evidence/`                 | Console PNGs used here                                   |
+
+
