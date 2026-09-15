@@ -78,6 +78,12 @@ A  quen-lora-dolly.fabiogomezdiaz.app  →  <printed IP>
 curl -s http://quen-lora-dolly.fabiogomezdiaz.app/v1/models | jq .
 ```
 
+To keep the H100 busy (idle serve is ~0% SM):
+
+```bash
+./task-2/05-load.sh
+```
+
 HTTP only (no TLS). `./task-1/03-apply_platform.sh` deletes the Ingress (controller stays). Tear down the LB with `./task-2/04-destroy_ingress.sh`.
 
 ## What not to do

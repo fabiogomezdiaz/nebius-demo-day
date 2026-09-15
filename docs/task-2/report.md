@@ -215,6 +215,14 @@ vLLM grabs most of the card at startup so the next request does not allocate KV 
 
 ## Proof — Nebius GPU dashboards (serve)
 
+Parked vLLM is ~0% SM. To generate tokens against the public hostname (sequential `POST /v1/chat/completions`, a `.` per HTTP 200):
+
+```bash
+./task-2/05-load.sh
+```
+
+That hits `http://quen-lora-dolly.fabiogomezdiaz.app` with `"model":"dolly"`. Ctrl-C stops it. A one-shot answer is the `curl` in [Evidence](#evidence-live-query).
+
 Window: **last 15 minutes**, **15 s** scrape, **GPU metrics** tab, 2026-09-14 ~15:35–15:45 local (engine start ~15:36, curls ~15:41, `nvidia-smi` ~15:44).
 
 - green: `computeinstance-e00n34shytzph1hj79` — remaining Slurm worker (GPU idle)
@@ -292,6 +300,7 @@ Pod anti-affinity must set `namespaces: [soperator]`. Without that, a pod in `ta
 | `task-1/03-apply_platform.sh` | Delete vLLM + Ingress; workers=2 |
 | `task-2/03-status.sh` | Worker pods, GPU allocation, vLLM, Ingress |
 | `task-2/04-destroy_ingress.sh` | Remove controller only |
+| `task-2/05-load.sh` | Sequential chat completions on the public hostname |
 | `task-2/k8s/` | Namespace, jail PV/PVC, vLLM, Ingress, nginx Helm values |
 | `docs/task-2/report.md` | This talk track |
 | `docs/task-2/static/evidence/` | Console PNGs (1920 px) |

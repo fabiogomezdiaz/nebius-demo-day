@@ -16,4 +16,6 @@ Screenshots: [../task-1/static/evidence/](../task-1/static/evidence/). Write-up:
 
 A longer run (more epochs / larger batch) would make the >80% SM window easier to screenshot. Filling 80% of 80 GB HBM needs a bigger batch or model; 7B LoRA does not.
 
+vLLM parked is the opposite: lots of VRAM, ~0% SM. After `./task-2/02-serve.sh`, run `./task-2/05-load.sh` to generate tokens against `http://quen-lora-dolly.fabiogomezdiaz.app`.
+
 See [../overview/status.md](../overview/status.md).

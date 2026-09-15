@@ -7,6 +7,7 @@
 | `02-serve.sh` | Pause Flux, workers=1, apply namespace / data / vLLM / Ingress |
 | `03-status.sh` | Worker pods, GPU allocation, vLLM, Ingress |
 | `04-destroy_ingress.sh` | Remove controller (vLLM/Soperator stay) |
+| `05-load.sh` | Sequential chat completions at the public hostname (raise GPU util) |
 | `k8s/flux-pause.yaml` | Suspend HelmRelease `soperator-fluxcd` so it does not reset workers |
 | `k8s/flux-resume.yaml` | Unsuspend Flux (used by `task-1/03-apply_platform.sh`) |
 | `k8s/workers-1.yaml` | NodeSet `worker` replicas=1 |
@@ -21,6 +22,7 @@
 ./task-2/01-ingress.sh    # prints the A-record IP; DNS is yours
 ./task-2/02-serve.sh      # workers=1 + all task-2 k8s artifacts
 ./task-2/03-status.sh
+./task-2/05-load.sh          # optional: keep the GPU busy (Ctrl-C)
 ./task-1/03-apply_platform.sh   # back to two Slurm workers
 ```
 
