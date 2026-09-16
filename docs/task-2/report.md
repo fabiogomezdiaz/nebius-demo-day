@@ -215,6 +215,8 @@ vLLM grabs most of the card at startup so the next request does not allocate KV 
 
 ## Proof — Nebius GPU dashboards (serve)
 
+Live: [GPU metrics](https://console.nebius.com/project-e00dqh87pr00x1qed0hwcy/mk8s/mk8scluster-e00v96aa42fmcr2smq/monitoring?monitoring_dashboard=gpu-metrics&monitoring_mk8s_node_group_id=all&monitoring_instance_id=all).
+
 Parked vLLM is ~0% SM. To generate tokens against the public hostname (sequential `POST /v1/chat/completions`, a `.` per HTTP 200):
 
 ```bash
