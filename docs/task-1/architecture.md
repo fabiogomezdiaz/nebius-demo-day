@@ -48,6 +48,10 @@ Node groups are created now; Slurm pods land on them in the platform apply.
 | Jail | NETWORK_SSD | Shared OS / Python env for every Slurm pod |
 | `/mnt/data` | jail submount | HF cache, dataset, checkpoints, logs |
 | Controller spool | NETWORK_SSD | Slurm controller state |
+| Accounting | 1 × `8vcpu-32gb` + 128 GiB SSD | slurmdbd + MariaDB |
+| NFS | 1 × `4vcpu-16gb` | nfs_in_k8s (not a standalone NFS VM) |
+
+Live Terraform state (names, IDs, Helm releases): [report.md — Terraform resources](report.md#terraform-resources-live-state).
 
 Overlays that exist because this is **not** the stock 8-GPU InfiniBand recipe:
 
