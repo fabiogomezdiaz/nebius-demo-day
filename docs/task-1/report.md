@@ -17,7 +17,7 @@ Assignment: [../overview/assignment.md](../overview/assignment.md). Architecture
 
 The stock Soperator recipe assumes **8×H100 + InfiniBand**. This lab is **two Ethernet H100s**. I overlayed Terraform so Slurm still schedules GPUs (`gres.conf` `Cores=0-7`, sentinel `gpu_cluster.id`), then submitted a **2-node LoRA** job through Slurm — not a Kubernetes GPU Deployment.
 
-Job **73** trained `Qwen/Qwen2.5-7B-Instruct` on Dolly (`train[:1500]`). Both ranks reported `world_size=2` and `cuda=True`. NCCL came up as `NET/Socket` on `eth0`. Loss dropped **2.25 → 1.71** in four steps (~35 s of train). Adapters landed on the shared filestore. The Nebius GPU dashboard shows **both cards at ~100% SM utilization** for that window, ~50 GB used framebuffer, and **zero NVLink** (expected: one GPU per node; gradients went over Ethernet).
+Job **73** trained `Qwen/Qwen2.5-7B-Instruct` on Dolly (`train[:1500]`). Both ranks reported `world_size=2` and `cuda=True`. NCCL came up as `NET/Socket` on `eth0`. Loss dropped **2.25 → 1.71** in four steps (~35 s of train). Adapters landed on the shared filestore. The [Nebius GPU metrics dashboard](https://console.nebius.com/project-e00dqh87pr00x1qed0hwcy/mk8s/mk8scluster-e00v96aa42fmcr2smq/monitoring?monitoring_dashboard=gpu-metrics&monitoring_mk8s_node_group_id=all&monitoring_instance_id=all) shows **both cards at ~100% SM utilization** for that window, ~50 GB used framebuffer, and **zero NVLink** (expected: one GPU per node; gradients went over Ethernet).
 
 ---
 
@@ -207,7 +207,7 @@ squeue    # should be empty when finished
 
 ### 12. Nebius console (browser)
 
-MK8s cluster → **Metrics** → **GPU metrics**, last 15 minutes, 15 s. Same window as job 73 (~15:35 local). That is where the screenshots in this report came from.
+Open the live [GPU metrics](https://console.nebius.com/project-e00dqh87pr00x1qed0hwcy/mk8s/mk8scluster-e00v96aa42fmcr2smq/monitoring?monitoring_dashboard=gpu-metrics&monitoring_mk8s_node_group_id=all&monitoring_instance_id=all) dashboard (MK8s cluster → **Metrics** → **GPU metrics**), last 15 minutes, 15 s. Same window as job 73 (~15:35 local). That is where the screenshots in this report came from.
 
 ---
 
@@ -252,6 +252,8 @@ Talking points:
 | `system 0–3`           | Flux, Soperator operator, GPU Operator | No          |
 | `controller-0`         | `slurmctld`                            | No          |
 | `login-0`              | SSH + `sbatch` / `sinfo`               | No          |
+| `accounting`           | slurmdbd + MariaDB                     | No          |
+| `nfs`                  | nfs_in_k8s                             | No          |
 | `worker-0`, `worker-1` | `slurmd` + the training processes      | 1×H100 each |
 
 
@@ -263,9 +265,70 @@ Shared disks:
 | Jail             | Slurm pods           | Shared OS / venv                     |
 | `/mnt/data`      | login + both workers | Scripts, HF cache, logs, checkpoints |
 | Controller spool | controller only      | Scheduler state                      |
+| Accounting disk  | accounting node      | slurmdbd / MariaDB                   |
 
 
 `/mnt/data` is on the **login** node so you can `sbatch` the same files the workers execute, and `tail` the same logs they write.
+
+### Terraform resources (live state)
+
+From `terraform/infra/terraform.tfstate` and `terraform/platform/terraform.tfstate` (2026-09-16). Data sources were looked up, not created. Flux later creates more Kubernetes objects (`SlurmCluster`, nodesets, NFS-in-k8s) that are **not** in this list.
+
+**Infra — Nebius resources** (`terraform/infra`, script `02-apply_infra.sh`):
+
+| Address | Type | Created name | ID | What it is |
+| --- | --- | --- | --- | --- |
+| `module.k8s.nebius_mk8s_v1_cluster.this` | MK8s cluster | `soperator-fabio-demo` | `mk8scluster-e00v96aa42fmcr2smq` | Kubernetes 1.35, RUNNING |
+| `module.k8s.nebius_mk8s_v1_node_group.system` | Node group | `system` | `mk8snodegroup-e00h26a8bhd7pk4ncp` | 4× `cpu-d3` `8vcpu-32gb`, 192 GiB SSD |
+| `module.k8s.nebius_mk8s_v1_node_group.controller` | Node group | `controller` | `mk8snodegroup-e00yzqes6zn9kwaa7d` | 1× `cpu-d3` `4vcpu-16gb`, 128 GiB SSD |
+| `module.k8s.nebius_mk8s_v1_node_group.login[0]` | Node group | `login` | `mk8snodegroup-e00h08q9g5rvxmh52q` | 1× `cpu-d3` `16vcpu-64gb`, 256 GiB SSD |
+| `module.k8s.nebius_mk8s_v1_node_group.accounting[0]` | Node group | `accounting` | `mk8snodegroup-e00aw468s61pd5j97e` | 1× `cpu-d3` `8vcpu-32gb`, 128 GiB SSD |
+| `module.k8s.nebius_mk8s_v1_node_group.nfs[0]` | Node group | `nfs` | `mk8snodegroup-e00fn86aehdyn5bnc7` | 1× `cpu-d3` `4vcpu-16gb`, 128 GiB SSD |
+| `module.k8s.nebius_mk8s_v1_node_group.worker_v2[0]` | Node group | `worker-0` | `mk8snodegroup-e00etqe76z04cywy4n` | 2× `gpu-h100-sxm` `1gpu-16vcpu-200gb`, 512 GiB SSD |
+| `module.k8s.nebius_vpc_v1_allocation.this` | Public IP | `soperator-fabio-demo-public-static-ip` | `vpcallocation-e00v22peh6gsb831pn` | `89.169.110.35` on the login LB |
+| `module.filestore.nebius_compute_v1_filesystem.jail[0]` | Filesystem | `soperator-fabio-demo-jail` | `computefilesystem-e00zwtspgvkypm5dke` | NETWORK_SSD 256 GiB |
+| `module.filestore.nebius_compute_v1_filesystem.jail_submount["data"]` | Filesystem | `soperator-fabio-demo-jail-submount-data` | `computefilesystem-e00ss2qf4sg0barq91` | NETWORK_SSD 512 GiB (`/mnt/data`) |
+| `module.filestore.nebius_compute_v1_filesystem.controller_spool[0]` | Filesystem | `soperator-fabio-demo-controller-spool` | `computefilesystem-e00nqgf1zeemp4kdhx` | NETWORK_SSD 128 GiB |
+| `module.filestore.nebius_compute_v1_filesystem.accounting[0]` | Filesystem | `soperator-fabio-demo-accounting` | `computefilesystem-e00bdtdvt1vm4g901m` | NETWORK_SSD 128 GiB |
+
+**Infra — lookups** (not created):
+
+| Address | Type | Name / ID |
+| --- | --- | --- |
+| `data.nebius_iam_v1_project.this` | IAM project | `csa-demoday-soperator-fabio-gomez-diaz` (`project-e00dqh87pr00x1qed0hwcy`) |
+| `data.nebius_vpc_v1_subnet.this` | VPC subnet | `default-subnet-mmli6zby` (`vpcsubnet-e00rnj9nfp6qysd3pr`) |
+| `module.resources.data.units_data_size.k8s_ephemeral_storage_reserve` | Size helper | — |
+| `module.k8s.data.units_data_size.boot_disk_minimal` | Size helper | — |
+| `module.k8s.module.resources.data.units_data_size.k8s_ephemeral_storage_reserve` | Size helper | — |
+
+**Platform — Helm / files** (`terraform/platform`, script `03-apply_platform.sh`):
+
+| Address | Type | Name | Namespace | Status |
+| --- | --- | --- | --- | --- |
+| `helm_release.gpu_operator` | Helm | `gpu-operator` v25.10.0 | `nvidia-gpu-operator` | deployed (`driver.enabled=false`) |
+| `module.slurm.helm_release.soperator_fluxcd_bootstrap` | Helm | `soperator-fluxcd-bootstrap` 4.1.8 | `flux-system` | deployed |
+| `module.slurm.helm_release.soperator_fluxcd_cm` | Helm | `terraform-fluxcd-values` | `flux-system` | deployed |
+| `module.slurm.helm_release.soperator_fluxcd_ad_hoc_cm` | Helm | `soperator-fluxcd-values` | `flux-system` | deployed |
+| `module.slurm.local_file.flux_release_rendered_nodesets` | Local file | `assets/render/flux_release_nodesets.yaml` | — | rendered nodesets |
+
+**Bookkeeping (`terraform_data`)** — provisioner records in state, not extra cloud VMs:
+
+| Stack | Address | Role |
+| --- | --- | --- |
+| infra | `terraform_data.kubeconfig` | Writes `terraform/kubeconfig` |
+| infra | `module.cleanup.terraform_data.disk_cleanup` | Leftover disk cleanup on destroy |
+| infra | `module.k8s.terraform_data.check_resource_preset_sufficiency["0"–"5"]` | Preset checks |
+| infra | `module.k8s.terraform_data.check_worker_gpu_fabric["0"]` | GPU fabric check (Ethernet dummy) |
+| infra | `module.k8s.terraform_data.kubectl_cluster_context` | kube context `nebius-fabio-demo-slurm` |
+| platform | `data.terraform_remote_state.infra` | Reads infra outputs |
+| platform | `module.fluxcd.terraform_data.flux_namespace` / `flux2` | Installs Flux |
+| platform | `terraform_data.soperator_flux_overlay` | ActiveChecks overlay |
+| platform | `terraform_data.platform_k8s_wipe` | Destroy-time wipe |
+| platform | `module.k8s_cleanup.terraform_data.login_service_cleanup` / `kruise_webhook_cleanup` | Destroy hooks |
+| platform | `module.slurm.terraform_data.check_worker_nodesets` | Nodeset check |
+| platform | `module.slurm.terraform_data.wait_for_slurm_cluster_hr` / `wait_for_slurm_cluster_available` / `wait_for_soperator_activechecks_hr` | Wait until Slurm is up |
+
+**Counts:** 27 infra state entries (12 real Nebius objects + 5 data + 10 helpers), 16 platform state entries (4 Helm + 1 file + 1 remote state + 10 helpers).
 
 ---
 
@@ -386,7 +449,7 @@ Logs on the jail:
 
 ## Proof — Nebius GPU dashboards (job 73)
 
-Window: **last 15 minutes**, **15 s** scrape, **GPU metrics** tab. Both series are the two H100 workers:
+Live: [GPU metrics](https://console.nebius.com/project-e00dqh87pr00x1qed0hwcy/mk8s/mk8scluster-e00v96aa42fmcr2smq/monitoring?monitoring_dashboard=gpu-metrics&monitoring_mk8s_node_group_id=all&monitoring_instance_id=all). Window: **last 15 minutes**, **15 s** scrape, **GPU metrics** tab. Both series are the two H100 workers:
 
 - green: `computeinstance-e00n34shytzph1hj79`
 - yellow: `computeinstance-e00zp4hb84yztx7dmp`
@@ -571,7 +634,7 @@ If asked “would 8×H100 + IB change this?”: set a real fabric, drop `NCCL_IB
 | Path                                           | What                                                     |
 | ---------------------------------------------- | -------------------------------------------------------- |
 | `task-1/00`–`07`                               | Prereqs → seed → infra → platform → sync → SSH → destroy |
-| `terraform/infra`                              | MK8s, node groups, filestore, GRES / GPU-cluster overlay |
+| `terraform/infra`                              | MK8s, node groups, filestore, GRES / GPU-cluster overlay (live inventory: [Terraform resources](#terraform-resources-live-state)) |
 | `terraform/platform`                           | Flux, Soperator, GPU Operator                            |
 | `task-1/train.sbatch`                          | Slurm + NCCL + `torchrun`                                |
 | `task-1/train.py`                              | LoRA SFT                                                 |
