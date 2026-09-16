@@ -7,4 +7,4 @@ PNG exports from Eraser. Source / DSL: [`../diagrams/`](../diagrams/).
 - [`how-train-py-works.png`](how-train-py-works.png) — beginner flowchart of `train.py`
 
 Console evidence for job 73 (and the failed job 71 contrast): [`evidence/`](evidence/).  
-Logs, LoRA adapters, `gres.conf`: [`../artifacts/`](../artifacts/). Talk track: [`../report.md`](../report.md).
+Talk track: [`../report.md`](../report.md).

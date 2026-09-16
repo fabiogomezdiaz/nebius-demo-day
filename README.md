@@ -72,7 +72,6 @@ InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/te
 
 ```
 docs/            # overview + task-1 … task-4
-gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 task-1/          # 00–07 runbook, train.sbatch / train.py / setup_env.sh
 task-2/          # 01-ingress, 02-serve, 03-status, 04-destroy_ingress; vLLM in task2-inference

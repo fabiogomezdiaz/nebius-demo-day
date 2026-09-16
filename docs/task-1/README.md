@@ -15,6 +15,5 @@ Talk track: [report.md](report.md) (job 73 logs + GPU screenshots).
 | [terraform-infiniband.md](terraform-infiniband.md) | 1-GPU Ethernet Terraform overlay |
 | [diagrams/](diagrams/) | Eraser source |
 | [static/](static/) | PNGs + [evidence](static/evidence/) screenshots |
-| [artifacts/](artifacts/) | Job 73 logs, Dolly LoRA adapters, live `gres.conf` |
 
 Assignment / status: [../overview/](../overview/).
