@@ -4,7 +4,7 @@
 | --- | --- |
 | `common.sh` | kubeconfig + `k` / `apply` (sourced by 01–04) |
 | `01-ingress.sh` | Install ingress-nginx LoadBalancer in `task2-ingress` (once) |
-| `02-serve.sh` | Pause Flux, workers=1, apply namespace / data / vLLM / Ingress |
+| `02-serve.sh` | Pause Flux, workers=1, apply namespace / data / vLLM / Ingress (drops task 3 if present) |
 | `03-status.sh` | Worker pods, GPU allocation, vLLM, Ingress |
 | `04-destroy_ingress.sh` | Remove controller (vLLM/Soperator stay) |
 | `05-load.sh` | Sequential chat completions at the public hostname (raise GPU util) |

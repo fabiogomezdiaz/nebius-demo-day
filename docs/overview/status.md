@@ -60,11 +60,16 @@ GRES `Cores=0-7` also lands in platform on this apply (replacing the live kubect
 | --- | --- |
 | Inference on the **same** MK8s cluster, **serving** the trained model | **Done.** [../task-2/report.md](../task-2/report.md). `serve` scaled workers 2→1 (Flux-patched), vLLM in `task2-inference` loaded job 73 LoRA `dolly`. `POST /v1/chat/completions` returned 200. |
 
-## Not done (email extras / tasks 3–4)
+## Done (task 3 — compare)
 
 | Requirement | Status |
 | --- | --- |
-| Run the **original (untrained)** model and **compare** to the LoRA adapters | **No.** Base is served as `qwen25-7b` but not compared yet. [../task-3/](../task-3/). |
+| Run the **original (untrained)** model and **compare** to the LoRA adapters | **Done.** Two vLLM processes (base + LoRA), one H100 each. 10 held-out Dolly prompts in [../task-3/compare.md](../task-3/compare.md). |
+
+## Not done (email extra / task 4)
+
+| Requirement | Status |
+| --- | --- |
 | Utilize **>80% of the GPUs** (console dashboards) | **SM util yes, HBM no** (task 1 job 73). See [../task-4/](../task-4/) and [../task-1/report.md](../task-1/report.md). |
 
 ## Evidence to grab before the interview

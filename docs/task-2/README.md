@@ -16,6 +16,7 @@ Both H100s are held by Soperator `worker-0` / `worker-1` (`nvidia.com/gpu: 1` ea
 | --- | --- | --- | --- |
 | Task 1 (train) | `./task-1/03-apply_platform.sh` | `worker-0` | `worker-1` |
 | Task 2 (serve) | `./task-2/02-serve.sh` | `worker-0` | vLLM |
+| Task 3 (compare) | `./task-3/01-serve.sh` | vLLM base | vLLM LoRA |
 | Look | `./task-2/03-status.sh` | | |
 
 ```bash
@@ -27,7 +28,7 @@ Both H100s are held by Soperator `worker-0` / `worker-1` (`nvidia.com/gpu: 1` ea
 
 `serve` applies `k8s/flux-pause.yaml` (suspend HelmRelease `soperator-fluxcd`) then `k8s/workers-1.yaml` (NodeSet replicas=1), and waits until `worker-1` is gone before scheduling vLLM. Flux would otherwise reset workers from `terraform-fluxcd-values` in ~5 minutes. Re-running `./task-1/03-apply_platform.sh` deletes vLLM, applies `k8s/flux-resume.yaml` + `k8s/workers-2.yaml`, and waits for both workers.
 
-vLLM runs in namespace **`task2-inference`**, not `soperator`. Slurm workers, login, and the original jail PVC stay in `soperator`. `./task-1/03-apply_platform.sh` deletes the vLLM Deployment/Service **and** the Ingress, then returns both GPUs to Slurm; the inference namespace, `/mnt/data` claim, and ingress-nginx controller stay so the next `serve` is a flip, not a rebuild.
+vLLM runs in namespace **`task2-inference`**, not `soperator`. Slurm workers, login, and the original jail PVC stay in `soperator`. `./task-1/03-apply_platform.sh` deletes the vLLM Deployment/Service **and** the Ingress (task 2 and task 3), then returns both GPUs to Slurm; the inference namespaces, `/mnt/data` claims, and ingress-nginx controller stay so the next `serve` is a flip, not a rebuild.
 
 A 2-node `sbatch` stays `PD` while you are in serve mode. Re-run `./task-1/03-apply_platform.sh` before replaying job 73. Login (`./task-1/05-login.sh`) and `/mnt/data` are unchanged in both modes.
 
@@ -90,6 +91,6 @@ HTTP only (no TLS). `./task-1/03-apply_platform.sh` deletes the Ingress (control
 
 - Do not `terraform destroy` platform or infra.
 - Do not scale the MK8s GPU **node group** to 0 (that deletes the H100 VMs).
-- Do not scale workers to 0 unless you drop live `sinfo` on purpose. `replicas: 1` keeps Task 1 showable.
+- Do not scale workers to 0 unless you are in task 3 (both H100s serving). `replicas: 1` keeps a live `sinfo` for task 2.
 
 See [../overview/status.md](../overview/status.md). Training path: [../task-1/](../task-1/).

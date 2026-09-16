@@ -1,0 +1,10 @@
+# Pause the parent Flux HelmRelease so it does not reset NodeSet replicas
+# from terraform-fluxcd-values every ~5 minutes. Resume via
+# task-2/k8s/flux-resume.yaml (./task-1/03-apply_platform.sh).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: soperator-fluxcd
+  namespace: flux-system
+spec:
+  suspend: true

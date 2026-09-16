@@ -7,6 +7,9 @@ source "$(cd "$(dirname "$0")" && pwd)/common.sh"
 
 echo "Serve: workers=1 + vLLM"
 # Recreate vLLM so a leftover pod cannot pin the GPU we need.
+# Task 3 holds both GPUs; drop it before workers can return to 1.
+k delete -f "${ROOT}/task-3/k8s/ingress.yaml" --wait --timeout=60s --ignore-not-found >/dev/null
+k delete -f "${ROOT}/task-3/k8s/vllm.yaml" --wait --timeout=180s --ignore-not-found >/dev/null
 k delete -f "${K8S}/ingress.yaml" --wait --timeout=60s --ignore-not-found >/dev/null
 k delete -f "${K8S}/vllm.yaml" --wait --timeout=180s --ignore-not-found >/dev/null
 

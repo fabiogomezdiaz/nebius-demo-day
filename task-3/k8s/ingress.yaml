@@ -1,0 +1,39 @@
+# Two public hostnames, same LoadBalancer (task-2/01-ingress.sh).
+# DNS is out of band: both A records → that IP.
+#   quen-qwen25.fabiogomezdiaz.app       → base (untrained)
+#   quen-lora-dolly.fabiogomezdiaz.app   → LoRA (job 73)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vllm-compare
+  namespace: task3-inference
+  labels:
+    demo: task-3
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: quen-qwen25.fabiogomezdiaz.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vllm-base
+                port:
+                  number: 8000
+    - host: quen-lora-dolly.fabiogomezdiaz.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vllm-dolly
+                port:
+                  number: 8000

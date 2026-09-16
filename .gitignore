@@ -53,6 +53,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Compare output from ./task-3/03-compare.sh
+task-3/out/
+
 # Local training caches (cluster I/O lives on /mnt/data)
 task-1/outputs/
 task-1/checkpoints/

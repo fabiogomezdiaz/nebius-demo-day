@@ -7,7 +7,7 @@ alwaysApply: true
 
 Read a file top to bottom and know what it does. Do not hide the work in helpers, `common.sh` functions, or Python.
 
-## Shell (`task-1/`, `task-2/`, `terraform/**/*.sh`)
+## Shell (`task-1/`, `task-2/`, `task-3/`, `task-4/`, `terraform/**/*.sh`)
 
 - One script = one job. Numbered runbook scripts stay linear: check, run commands, wait, print the next step.
 - Prefer `kubectl apply -f` / `delete -f` YAML over `awk`, `jq` rewrites, or live `kubectl patch`.

@@ -1,0 +1,99 @@
+# Two claims of the same jail /mnt/data path (one PVC per PV). Each vLLM
+# pod mounts its own PVC so both GPU nodes can bind /mnt/jail-submount-data
+# at once. Reclaim is Retain: deleting these PVs must not touch filestore
+# data (LoRA adapters, HF cache).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jail-submount-data-task3-base-pv
+  labels:
+    demo: task-3
+    model: base
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 512Gi
+  local:
+    path: /mnt/jail-submount-data
+  mountOptions:
+    - rw
+    - relatime
+    - exec
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: slurm.nebius.ai/jail
+              operator: In
+              values:
+                - "true"
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jail-submount-data-base
+  namespace: task3-inference
+  labels:
+    demo: task-3
+    model: base
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 512Gi
+  storageClassName: ""
+  volumeName: jail-submount-data-task3-base-pv
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jail-submount-data-task3-dolly-pv
+  labels:
+    demo: task-3
+    model: dolly
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 512Gi
+  local:
+    path: /mnt/jail-submount-data
+  mountOptions:
+    - rw
+    - relatime
+    - exec
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: slurm.nebius.ai/jail
+              operator: In
+              values:
+                - "true"
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jail-submount-data-dolly
+  namespace: task3-inference
+  labels:
+    demo: task-3
+    model: dolly
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 512Gi
+  storageClassName: ""
+  volumeName: jail-submount-data-task3-dolly-pv
+  volumeMode: Filesystem

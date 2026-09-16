@@ -1,6 +1,6 @@
 # Task 1 — distributed training on Soperator
 
-Self-contained runbook for Task 1: cluster + Slurm + LoRA SFT. Training is done (job 73). Inference lives under [../task-2](../task-2/). Compare: [../docs/task-3](../docs/task-3/).
+Self-contained runbook for Task 1: cluster + Slurm + LoRA SFT. Training is done (job 73). Inference lives under [../task-2](../task-2/). Compare: [../task-3](../task-3/).
 
 From the repo root:
 
@@ -25,7 +25,7 @@ Destroy after the interview, **platform then infra**:
 | `00-install_prereqs.sh` | Terraform, Nebius CLI, kubectl, Helm, jq, yq, coreutils |
 | `01-seed_tfvars.sh` | Tenant / project / region / subnet / SSH pubkey into tfvars |
 | `02-apply_infra.sh` | MK8s, node groups, filestore, kubeconfig |
-| `03-apply_platform.sh` | Flux, Soperator, GPU Operator; restores 2 workers (drops Task 2 vLLM) |
+| `03-apply_platform.sh` | Flux, Soperator, GPU Operator; restores 2 workers (drops Task 2/3 vLLM) |
 | `04-sync.sh` | Copy job files onto `/mnt/data/nebius-demo/task-1/` (skips laptop scripts and hf_cache) |
 | `05-login.sh` | SSH to the Slurm login LoadBalancer |
 | `06-destroy_platform.sh` | Tear down operators; keep MK8s |

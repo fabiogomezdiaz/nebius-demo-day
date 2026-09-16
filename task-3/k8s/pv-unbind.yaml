@@ -1,0 +1,4 @@
+# Drop stale claimRef after a Task 3 PVC was deleted (phase Released).
+# Bound volumes must not use this. Same patch for both Task 3 PVs.
+- op: remove
+  path: /spec/claimRef

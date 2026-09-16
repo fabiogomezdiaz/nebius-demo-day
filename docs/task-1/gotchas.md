@@ -108,7 +108,7 @@ Those jobs sit on partition **`hidden`**. They can leave `GresUsed` non-zero or 
 
 ## Submitting the training job
 
-Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment (Task 2, namespace `task2-inference`) stays `Pending` until workers are scaled to 1 (`task-2/02-serve.sh`).
+Training is `sbatch` on the login node. Worker pods already bind `nvidia.com/gpu`; a Kubernetes GPU Deployment stays `Pending` until workers are scaled down (task 2: `02-serve.sh` replicas=1; task 3: `01-serve.sh` replicas=0).
 
 What actually ran (job 66): two nodes, `--gpus-per-node=1`, `--ntasks-per-node=1`, `--cpus-per-task=1`, `--mem=80G`, then `bash train.sbatch` as `--wrap`. `#SBATCH` lines inside the wrapped script are **ignored**; flags must be on the `sbatch` command (or you must `sbatch train.sbatch` without `--wrap`).
 

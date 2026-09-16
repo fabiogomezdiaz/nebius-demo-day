@@ -1,0 +1,10 @@
+# Both H100s free for Task 3 (one vLLM per GPU). Apply after flux-pause.yaml.
+# Live sinfo has no GPU nodes until ./task-1/03-apply_platform.sh.
+# Server-side apply only owns spec.replicas; the rest of the NodeSet stays Helm's.
+apiVersion: slurm.nebius.ai/v1alpha1
+kind: NodeSet
+metadata:
+  name: worker
+  namespace: soperator
+spec:
+  replicas: 0

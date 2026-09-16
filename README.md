@@ -52,6 +52,8 @@ flowchart LR
 8. `sbatch /mnt/data/nebius-demo/task-1/train.sbatch`.
 9. Confirm `world_size=2`, adapters at `/mnt/data/nebius-demo/checkpoints/dolly-lora`, both GPUs busy.
 10. Extra mile (task 2): `./task-2/01-ingress.sh` (DNS A record), then `./task-2/02-serve.sh`. Flip back with `./task-1/03-apply_platform.sh`.
+11. Extra mile (task 3): `./task-3/01-serve.sh` (one vLLM per H100), then `./task-3/03-compare.sh`.
+12. Extra mile (task 4): `./task-4/01-load.sh` while both models are up (dashboard SM). Same flip back.
 
 Detail: [docs/task-1/training.md](docs/task-1/training.md).  
 InfiniBand Terraform notes: [docs/task-1/terraform-infiniband.md](docs/task-1/terraform-infiniband.md).
@@ -74,6 +76,8 @@ gitops/          # notes; operators are Terraform in terraform/platform
 terraform/       # infra (cloud) + platform (operators)
 task-1/          # 00–07 runbook, train.sbatch / train.py / setup_env.sh
 task-2/          # 01-ingress, 02-serve, 03-status, 04-destroy_ingress; vLLM in task2-inference
+task-3/          # 01-serve, 02-status, 03-compare; two vLLMs in task3-inference
+task-4/          # 01-load; concurrent queries on both task-3 URLs
 presentation/    # PowerPoint source + generated deck
 ```
 
