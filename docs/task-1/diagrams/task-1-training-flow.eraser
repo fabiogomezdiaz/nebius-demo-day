@@ -14,9 +14,9 @@ data [label: "/mnt/data filestore", icon: hard-drive, color: gray]
 
 ws > login: SSH via 05-login.sh
 activate login
-ws > data: task-1/04-sync.sh rsyncs task-1/ to /mnt/data/nebius-demo
-login > data: setup_env.sh creates shared venv
-ws > login: sbatch train.sbatch
+ws > data: task-1/04-sync.sh rsyncs task-1/ to /mnt/data/nebius-demo/task-1/
+login > data: task-1/setup_env.sh creates shared venv
+ws > login: sbatch task-1/train.sbatch
 login > ctld: Allocate 2 nodes x 1 GPU
 activate ctld
 ctld > w0: srun torchrun rank 0

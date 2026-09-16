@@ -19,8 +19,8 @@ if [[ -z "${LOGIN_HOST}" ]]; then
   LOGIN_HOST="$("${ROOT}/task-1/login_host.sh")"
 fi
 
-echo "Syncing task-1 to root@${LOGIN_HOST}:/mnt/data/nebius-demo"
-ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "root@${LOGIN_HOST}" "mkdir -p /mnt/data/nebius-demo"
+echo "Syncing ${ROOT}/task-1/ to root@${LOGIN_HOST}:/mnt/data/nebius-demo/task-1/"
+ssh -i "${KEY}" -o StrictHostKeyChecking=accept-new "root@${LOGIN_HOST}" "mkdir -p /mnt/data/nebius-demo/task-1"
 rsync -az \
   --exclude '00-*.sh' \
   --exclude '01-*.sh' \
